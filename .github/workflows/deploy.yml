@@ -16,6 +16,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pas de télémétrie Astro pendant les builds.
+  ASTRO_TELEMETRY_DISABLED: 1
+
 jobs:
   deployer:
     name: Tester, construire, publier
