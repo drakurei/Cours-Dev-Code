@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    .p { fill: #b4405f; }
+    .c { fill: #f6f5f2; }
+    .s { fill: #8e2f49; }
+    @media (prefers-color-scheme: dark) {
+      .p { fill: #f08aa6; }
+      .c { fill: #121114; }
+      .s { fill: #f6bacb; }
+    }
+  </style>
+  <g class="p">
+    <path d="M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z"/>
+    <path d="M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z" transform="rotate(72 50 50)"/>
+    <path d="M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z" transform="rotate(144 50 50)"/>
+    <path d="M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z" transform="rotate(216 50 50)"/>
+    <path d="M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z" transform="rotate(288 50 50)"/>
+  </g>
+  <circle class="c" cx="50" cy="50" r="7.5"/>
+  <circle class="s" cx="50" cy="50" r="3"/>
+</svg>

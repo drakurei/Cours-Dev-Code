@@ -1,0 +1,1 @@
+import{n as e}from"./texte.BbM_7C0u.js";var t=new Set(`a.au.aux.c.ce.ces.d.de.des.du.en.et.j.l.la.le.les.m.n.ou.par.pour.s.sa.se.ses.son.sur.t.un.une.the.of.to.and`.split(`.`)),n=/[^\p{L}\p{N}]+/u;function r(n){let r=e(n);return r&&!t.has(r)?r:null}function i(r){return e(r).split(n).filter(e=>e&&!t.has(e))}function a(e,t){return t.every(t=>e.includes(t))}export{i as n,r,a as t};

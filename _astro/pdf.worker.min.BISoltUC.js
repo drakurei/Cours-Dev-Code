@@ -1,0 +1,1 @@
+var e=`/Cours-Dev-Code/_astro/pdf.worker.min.CjEcRF4W.mjs`;export{e as default};
