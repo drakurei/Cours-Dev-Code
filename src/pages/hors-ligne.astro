@@ -1,0 +1,100 @@
+---
+/**
+ * Hors-ligne — 迷 mayou : servie par le service worker quand une page n'est ni en ligne ni en cache.
+ * Calme : un kanji, une phrase, une action (Réessayer).
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icone from '../components/Icone.astro';
+import { url } from '../lib/url.ts';
+
+// Cercle au pinceau, ouvert en haut à droite (même geste que l'ensō du site).
+const TRAIT = 'M64 13C42 5 13 18 10.5 46C8 74 30 92.5 54 90.5C78 88.5 92 69 89.5 46C88 31 79.5 21 70.5 16.5';
+---
+
+<BaseLayout titre="Hors-ligne" description="Tu es hors-ligne. Les pages déjà ouvertes restent disponibles." noindex>
+  <section class="hors-ligne" aria-labelledby="hors-ligne-titre">
+    <div class="hors-ligne__sceau" aria-hidden="true">
+      <svg viewBox="0 0 100 100" width="168" height="168" focusable="false">
+        <path d={TRAIT} pathLength="100" />
+      </svg>
+      <span class="hors-ligne__kanji" lang="ja" title="mayou — hésiter, être perdu">迷</span>
+    </div>
+    <h1 class="hors-ligne__titre" id="hors-ligne-titre" data-grand-titre>Tu es hors-ligne.</h1>
+    <p class="hors-ligne__texte">Les pages déjà ouvertes restent disponibles.</p>
+    <div class="hors-ligne__actions">
+      <button class="btn btn--primaire btn--grand" type="button" data-reessayer>Réessayer</button>
+      <a class="btn btn--discret btn--grand" href={url('/')}>
+        <Icone nom="maison" taille={20} />Retour à Aujourd’hui
+      </a>
+    </div>
+    <p class="hors-ligne__etat" role="status" data-etat-reseau></p>
+  </section>
+</BaseLayout>
+
+<script>
+  document.querySelector('[data-reessayer]')?.addEventListener('click', () => window.location.reload());
+  // La connexion revient : on le dit, sans recharger à la place de l'utilisateur.
+  window.addEventListener('online', () => {
+    const etat = document.querySelector('[data-etat-reseau]');
+    if (etat) etat.textContent = 'Connexion retrouvée. Tu peux réessayer.';
+  });
+</script>
+
+<style>
+  .hors-ligne {
+    display: grid;
+    justify-items: center;
+    gap: var(--s-3);
+    padding: var(--s-9) 0 var(--s-8);
+    text-align: center;
+  }
+
+  .hors-ligne__sceau {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 168px;
+    height: 168px;
+    margin-bottom: var(--s-4);
+  }
+
+  .hors-ligne__sceau svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+
+  .hors-ligne__sceau path {
+    fill: none;
+    stroke: var(--c-line-strong);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  .hors-ligne__kanji {
+    color: var(--c-ink-2);
+    font: 700 4.5rem/1 var(--font-kanji);
+  }
+
+  .hors-ligne__titre { font: var(--t-large); letter-spacing: var(--t-large-track); }
+  .hors-ligne__texte { max-width: 40ch; color: var(--c-ink-2); font: var(--t-body); }
+
+  .hors-ligne__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-3);
+    margin-top: var(--s-4);
+  }
+
+  .hors-ligne__etat {
+    min-height: 1.4em;
+    color: var(--c-accent-ink);
+    font: var(--t-subhead);
+  }
+
+  @media (max-width: 599px) {
+    .hors-ligne { padding-top: var(--s-7); }
+    .hors-ligne__titre { font: var(--t-title1); letter-spacing: var(--t-title1-track); }
+  }
+</style>

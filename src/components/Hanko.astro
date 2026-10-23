@@ -1,0 +1,117 @@
+---
+/**
+ * Hanko 済 : tampon vermillon « terminé », légère rotation, texture d'encre (feTurbulence).
+ * `anime` : animation « tamponnée » au chargement (scale 1.4 → 1) + lignes de vitesse 集中線.
+ * `coursId` : visible seulement quand ce cours est terminé (src/scripts/progression.ts
+ *             retire `hidden` et pose data-anime="true" au clic sur « J'ai compris ce cours »).
+ */
+import { idUnique } from '../lib/ids.ts';
+
+interface Props {
+  taille?: number;
+  anime?: boolean;
+  coursId?: string | undefined;
+  /** Lignes de vitesse derrière le tampon (célébration). */
+  lignes?: boolean;
+  class?: string;
+}
+
+const { taille = 64, anime = false, coursId, lignes = false, class: classe } = Astro.props;
+const idEncre = idUnique('hanko-encre');
+const rayons = Array.from({ length: 24 }, (_, i) => i * 15);
+---
+
+<span
+  class:list={['hanko', lignes && 'hanko--lignes', classe]}
+  data-hanko-cours={coursId}
+  data-anime={anime ? 'true' : undefined}
+  hidden={coursId ? true : undefined}
+  role="img"
+  aria-label="Terminé"
+  style={`--taille: ${taille}px`}
+>
+  {
+    lignes && (
+      <svg class="hanko__lignes" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+        {rayons.map((a, i) => (
+          <line x1="100" y1={i % 2 ? 18 : 6} x2="100" y2={i % 3 ? 44 : 52} transform={`rotate(${a} 100 100)`} />
+        ))}
+      </svg>
+    )
+  }
+  <svg class="hanko__tampon" viewBox="0 0 64 64" width={taille} height={taille} aria-hidden="true" focusable="false">
+    <filter id={idEncre} x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="11" result="bruit" />
+      <feColorMatrix in="bruit" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2.4 0 0 0 2.1" result="trous" />
+      <feComposite in="SourceGraphic" in2="trous" operator="in" result="encre" />
+      <feDisplacementMap in="encre" in2="bruit" scale="1.4" />
+    </filter>
+    <g filter={`url(#${idEncre})`}>
+      <rect x="5" y="5" width="54" height="54" rx="11" />
+      <text x="32" y="33" text-anchor="middle" dominant-baseline="central">済</text>
+    </g>
+  </svg>
+</span>
+
+<style>
+  .hanko {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--taille);
+    height: var(--taille);
+    rotate: -8deg;
+  }
+
+  .hanko__tampon { overflow: visible; }
+
+  .hanko__tampon rect {
+    fill: none;
+    stroke: var(--c-hanko);
+    stroke-width: 3.2;
+  }
+
+  .hanko__tampon text {
+    fill: var(--c-hanko);
+    font-family: var(--font-kanji);
+    font-size: 34px;
+    font-weight: 700;
+  }
+
+  .hanko__lignes {
+    position: absolute;
+    inset: -60%;
+    width: 220%;
+    height: 220%;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .hanko__lignes line {
+    stroke: var(--c-hanko);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+  }
+
+  /* Animation « tamponnée » : le tampon descend, s'écrase, l'encre reste. */
+  .hanko[data-anime="true"] .hanko__tampon {
+    animation: tamponner var(--d-4) var(--ease-out) both;
+  }
+
+  .hanko[data-anime="true"] .hanko__lignes {
+    animation: lignes-vitesse 900ms var(--ease-out) both 160ms;
+  }
+
+  @keyframes tamponner {
+    0% { opacity: 0; transform: scale(1.4); }
+    55% { opacity: 1; transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes lignes-vitesse {
+    0% { opacity: 0; transform: scale(0.7); }
+    35% { opacity: 0.55; }
+    100% { opacity: 0; transform: scale(1.08); }
+  }
+</style>

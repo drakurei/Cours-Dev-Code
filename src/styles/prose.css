@@ -1,0 +1,210 @@
+/*
+ * Manabi 学び — texte des cours (.prose).
+ * Police de lecture, ligne de 68ch, hiérarchie nette, beaucoup d'air (ma 間).
+ */
+
+.prose {
+  max-width: var(--lecture-max);
+  color: var(--c-ink);
+  font: var(--t-read);
+  counter-reset: notion;
+}
+
+.prose > * + * { margin-top: 1.1em; }
+
+/* ─── Notions (chaque ##) ─── */
+.prose .notion {
+  counter-increment: notion;
+  scroll-margin-top: calc(var(--topbar-h) + var(--safe-top) + var(--s-4));
+}
+
+.prose > .notion + .notion,
+.prose > :not(.notion) + .notion {
+  margin-top: var(--s-8);
+}
+
+.prose .notion > * + * { margin-top: 1.1em; }
+
+/* ─── Titres ─── */
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+  scroll-margin-top: calc(var(--topbar-h) + var(--safe-top) + var(--s-4));
+}
+
+.prose h2 {
+  font: var(--t-title1);
+  letter-spacing: var(--t-title1-track);
+}
+
+/* Petit sur-titre « Notion 2 » : les notions sont une vraie suite (Mode Focus). */
+.prose .notion > h2::before {
+  content: "Notion " counter(notion);
+  display: block;
+  margin-bottom: var(--s-2);
+  color: var(--c-ink-3);
+  font: var(--t-caption);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.prose h3 {
+  font: var(--t-title3);
+  letter-spacing: var(--t-title3-track);
+  margin-top: 2em;
+}
+
+.prose h4 {
+  font: var(--t-headline);
+  margin-top: 1.6em;
+}
+
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + * { margin-top: 0.75em; }
+
+/* ─── Texte ─── */
+.prose strong { font-weight: 700; color: var(--c-ink); }
+.prose em { font-style: italic; }
+.prose small { font-size: 0.85em; }
+.prose mark {
+  background: color-mix(in srgb, var(--b-astuce-accent) 22%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 0.15em;
+}
+
+.prose a { font-weight: 500; }
+
+.prose hr {
+  height: 1px;
+  border: 0;
+  background: var(--c-line-strong);
+  margin-block: var(--s-7);
+}
+
+/* ─── Listes ─── */
+.prose ul,
+.prose ol { padding-left: 1.4em; }
+
+.prose li + li { margin-top: 0.4em; }
+.prose li > ul,
+.prose li > ol { margin-top: 0.4em; }
+
+.prose ul > li::marker { color: var(--c-accent); }
+.prose ol > li::marker {
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Listes de tâches GFM */
+.prose .contains-task-list { list-style: none; padding-left: 0.2em; }
+.prose .task-list-item { display: flex; gap: 0.6em; align-items: baseline; }
+.prose .task-list-item input {
+  accent-color: var(--c-accent);
+  width: 1.05em;
+  height: 1.05em;
+  translate: 0 0.15em;
+}
+
+/* ─── Code en ligne ─── */
+.prose :not(pre) > code {
+  padding: 0.12em 0.38em;
+  border-radius: var(--r-xs);
+  background: var(--c-bg-grouped);
+  color: var(--c-ink);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  font-variant-ligatures: none;
+  overflow-wrap: anywhere;
+}
+
+/* ─── Citations ─── */
+.prose blockquote {
+  padding-left: var(--s-4);
+  border-left: 3px solid var(--c-line-strong);
+  color: var(--c-ink-2);
+}
+
+/* ─── Images ─── */
+.prose img {
+  margin-inline: auto;
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 1px var(--c-line);
+  background: var(--c-surface);
+}
+
+.prose p:has(> img:only-child) { margin-block: var(--s-6); }
+
+/* ─── Tableaux (enveloppés dans .tableau pour défiler sur mobile) ─── */
+.prose .tableau {
+  overflow-x: auto;
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  background: var(--c-surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--t-callout);
+  font-variant-numeric: tabular-nums;
+}
+
+.prose th,
+.prose td {
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose thead th {
+  background: var(--c-bg-grouped);
+  color: var(--c-ink-2);
+  font: 600 0.8125rem/1.3 var(--font-ui);
+  letter-spacing: 0.02em;
+}
+
+.prose tbody tr + tr td { border-top: 1px solid var(--c-line); }
+
+/* ─── Détails / résumé ─── */
+.prose details {
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  padding: var(--s-3) var(--s-4);
+}
+
+.prose summary {
+  cursor: pointer;
+  font: var(--t-headline);
+  color: var(--c-ink);
+  min-height: 28px;
+}
+
+.prose details[open] > summary { margin-bottom: var(--s-2); }
+
+/* ─── Notes de bas de page ─── */
+.prose .footnotes {
+  margin-top: var(--s-8);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-line);
+  color: var(--c-ink-2);
+  font: var(--t-subhead);
+}
+
+.prose [data-footnote-ref] { font-family: var(--font-ui); font-weight: 600; text-decoration: none; }
+.prose [data-footnote-backref] { text-decoration: none; }
+
+/* ─── Mobile : un peu moins d'air ─── */
+@media (max-width: 599px) {
+  .prose { font-size: 1.0625rem; }
+  .prose h2 { font: var(--t-title2); letter-spacing: var(--t-title2-track); }
+  .prose > .notion + .notion,
+  .prose > :not(.notion) + .notion { margin-top: var(--s-7); }
+}

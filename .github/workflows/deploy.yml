@@ -1,0 +1,73 @@
+# Déploiement du site sur GitHub Pages (branche gh-pages).
+# Déclenché à chaque push sur main, à la main (onglet Actions), ou appelé par inbox.yml.
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Commit à déployer (par défaut : celui de l'événement)"
+        type: string
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  deployer:
+    name: Tester, construire, publier
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Un seul déploiement à la fois ; celui en cours n'est jamais annulé.
+    # (Au niveau du job : un workflow appelé ne doit pas partager le groupe de son appelant.)
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Installer Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier le contenu
+        run: npm run verifier
+
+      - name: Tests
+        run: npm test
+
+      - name: Construire le site
+        run: npm run build
+
+      - name: Publier sur la branche gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          # .nojekyll est ajouté (enable_jekyll: false) : GitHub sert les fichiers tels quels.
+          enable_jekyll: false
+          # Une seule version sur gh-pages : le dépôt reste léger malgré les PDF et images.
+          force_orphan: true
+          user_name: "github-actions[bot]"
+          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          full_commit_message: "Déploiement de ${{ inputs.ref || github.sha }}"
+
+      - name: Résumé
+        run: |
+          {
+            echo "### Site publié"
+            echo ""
+            echo "https://drakurei.github.io/Cours-Dev-Code/ (en ligne d'ici une minute environ)"
+          } >> "$GITHUB_STEP_SUMMARY"

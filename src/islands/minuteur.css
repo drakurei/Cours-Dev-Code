@@ -1,0 +1,269 @@
+/* Minuteur focus (src/islands/Minuteur.tsx) : carte de la Sidebar et pastille flottante (mobile). */
+.minuteur { position: relative; }
+
+/* ─── Ensō qui se vide ─── */
+.minuteur__enso { flex: none; overflow: visible; }
+
+.minuteur__enso path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.minuteur__enso-fond {
+  stroke: var(--c-line-strong);
+  stroke-width: 3;
+}
+
+.minuteur__enso-trait path {
+  stroke: var(--c-ink-3);
+  transition:
+    stroke-dasharray 1s linear,
+    stroke-dashoffset 1s linear,
+    stroke var(--d-3) var(--ease-out);
+}
+
+.minuteur[data-etat="en-cours"] .minuteur__enso-trait path { stroke: var(--c-accent); }
+.minuteur[data-etat="pret"] .minuteur__enso-trait path { stroke: color-mix(in srgb, var(--c-accent) 45%, transparent); }
+.minuteur__enso-trait[data-vide] { opacity: 0; }
+
+/* ─── Carte compacte (Sidebar) ─── */
+.minuteur__carte {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3) var(--s-3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--c-ink) 4%, transparent);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  transition: background-color var(--d-3) var(--ease-out), box-shadow var(--d-3) var(--ease-out);
+}
+
+.minuteur[data-etat="en-cours"] .minuteur__carte {
+  background: var(--c-accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 18%, transparent);
+}
+
+.minuteur__tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-height: 32px;
+}
+
+.minuteur__titre {
+  min-width: 0;
+  color: var(--c-ink-2);
+  font: var(--t-caption);
+  font-weight: 600;
+  letter-spacing: var(--t-caption-track);
+}
+
+.minuteur[data-etat="en-cours"] .minuteur__titre { color: var(--c-accent-ink); }
+
+.minuteur__corps {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: var(--cible);
+}
+
+.minuteur__temps {
+  flex: 1;
+  color: var(--c-ink);
+  font: 650 1.375rem/1.2 var(--font-ui);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.minuteur[data-etat="pause"] .minuteur__temps { color: var(--c-ink-2); }
+
+.minuteur__message {
+  min-width: 0;
+  color: var(--c-ink);
+  font: var(--t-headline);
+  letter-spacing: var(--t-headline-track);
+}
+
+.minuteur__relancer {
+  margin-top: var(--s-1);
+  font-size: 0.9375rem;
+}
+
+.minuteur__actions { display: flex; gap: var(--s-1); }
+
+.minuteur__bouton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--c-accent-ink);
+  transition: background-color var(--d-1) var(--ease-out), transform var(--d-2) var(--ease-spring);
+}
+
+/* Cible tactile de 44 px. */
+.minuteur__bouton::after { content: ""; position: absolute; inset: -2px; }
+.minuteur__bouton:hover { background: color-mix(in srgb, var(--c-accent) 12%, transparent); }
+.minuteur__bouton:active { transform: scale(0.94); }
+.minuteur__bouton:focus-visible { border-radius: var(--r-full); }
+
+.minuteur__bouton--plein {
+  width: 44px;
+  height: 44px;
+  background: var(--c-accent-soft);
+}
+
+.minuteur__bouton--plein::after { inset: 0; }
+.minuteur__bouton--plein:hover { background: color-mix(in oklab, var(--c-accent-soft) 84%, var(--c-accent)); }
+
+.minuteur__tete .minuteur__mini {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-right: -6px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: none;
+  color: var(--c-ink-3);
+  transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out);
+}
+
+.minuteur__tete .minuteur__mini::after { content: ""; position: absolute; inset: -6px; }
+.minuteur__tete .minuteur__mini:hover { background: color-mix(in srgb, var(--c-ink) 7%, transparent); color: var(--c-ink); }
+.minuteur__tete .minuteur__mini:focus-visible { border-radius: var(--r-full); }
+.minuteur__cloche[aria-pressed="true"] { color: var(--c-accent); }
+
+/* Durées : contrôle segmenté façon iOS. */
+.minuteur__durees {
+  display: flex;
+  gap: 2px;
+  margin-top: var(--s-1);
+  padding: 3px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
+}
+
+.minuteur__duree {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 var(--s-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--c-ink-2);
+  font: 600 0.8125rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: background-color var(--d-2) var(--ease-out), color var(--d-2) var(--ease-out), box-shadow var(--d-2) var(--ease-out);
+}
+
+/* 44 px de haut pour le doigt, sans grossir le contrôle. */
+.minuteur__duree::after { content: ""; position: absolute; inset: -6px 0; }
+.minuteur__duree:hover { color: var(--c-ink); }
+
+.minuteur__duree[aria-pressed="true"] {
+  background: var(--c-surface);
+  color: var(--c-ink);
+  box-shadow: var(--sh-1);
+}
+
+/* ─── Pastille flottante (< 1024 px) ─── */
+.minuteur__flottant {
+  position: fixed;
+  right: calc(var(--s-4) + var(--safe-right));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--s-3));
+  z-index: 29;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-2);
+  animation: minuteur-entree var(--d-3) var(--ease-out);
+}
+
+.minuteur__pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--cible);
+  padding: 0 var(--s-4) 0 var(--s-2);
+  border: 0;
+  border-radius: var(--r-full);
+  color: var(--c-ink);
+  box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line);
+  font: 600 0.9375rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--d-2) var(--ease-spring);
+}
+
+.minuteur__pastille:active { transform: scale(0.96); }
+.minuteur__pastille:focus-visible { border-radius: var(--r-full); }
+.minuteur[data-etat="en-cours"] .minuteur__pastille { color: var(--c-accent-ink); }
+.minuteur[data-etat="pause"] .minuteur__pastille-temps { color: var(--c-ink-2); }
+
+.minuteur__panneau {
+  display: grid;
+  gap: var(--s-2);
+  width: min(320px, calc(100vw - 2 * var(--s-4)));
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  color: var(--c-ink);
+  box-shadow: var(--sh-3), inset 0 0 0 1px var(--c-line);
+  transform-origin: bottom right;
+  animation: minuteur-panneau var(--d-2) var(--ease-out);
+}
+
+.minuteur__panneau .minuteur__titre {
+  color: var(--c-ink);
+  font: var(--t-headline);
+  letter-spacing: var(--t-headline-track);
+}
+
+.minuteur__panneau .minuteur__message {
+  color: var(--c-ink-2);
+  font: var(--t-subhead);
+}
+
+.minuteur__panneau-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+}
+
+.minuteur__action {
+  flex: 1;
+  min-width: 0;
+  padding-inline: var(--s-4);
+}
+
+.minuteur__panneau .minuteur__cloche {
+  flex: none;
+  --btn-bg: color-mix(in srgb, var(--c-ink) 6%, transparent);
+  --btn-ink: var(--c-ink-2);
+}
+
+.minuteur__panneau .minuteur__cloche[aria-pressed="true"] {
+  --btn-bg: var(--c-accent-soft);
+  --btn-ink: var(--c-accent-ink);
+}
+
+@keyframes minuteur-entree {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+
+@keyframes minuteur-panneau {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+
+@media (min-width: 1024px) {
+  .minuteur--pastille { display: none; }
+}

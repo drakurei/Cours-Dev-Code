@@ -1,0 +1,31 @@
+---
+/**
+ * Indices progressifs d'un exercice, emboîtés : l'indice 2 n'apparaît qu'une fois
+ * l'indice 1 ouvert… puis la solution. Fonctionne sans JavaScript (<details>).
+ */
+interface Props {
+  /** HTML déjà rendu (src/lib/donnees-cours.ts). */
+  indices: string[];
+  solution: string;
+  /** Numéro du premier indice affiché (interne, pour la récursion). */
+  numero?: number;
+}
+
+const { indices, solution, numero = 1 } = Astro.props;
+const [premier, ...suite] = indices;
+---
+
+{
+  premier !== undefined ? (
+    <details class="aide">
+      <summary>Indice {numero}</summary>
+      <div class="aide__corps" set:html={premier} />
+      <Astro.self indices={suite} solution={solution} numero={numero + 1} />
+    </details>
+  ) : solution ? (
+    <details class="aide aide--solution">
+      <summary>Voir la solution</summary>
+      <div class="aide__corps" set:html={solution} />
+    </details>
+  ) : null
+}

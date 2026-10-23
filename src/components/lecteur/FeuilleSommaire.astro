@@ -1,0 +1,107 @@
+---
+/**
+ * Feuille « Sommaire » des petits écrans (< 1280 px) : <dialog> natif (focus piégé, Échap).
+ * Ouverte par button[data-sommaire-ouvrir] ; un lien ferme la feuille, fait défiler et focalise la section
+ * (src/scripts/lecteur/sommaire.ts).
+ */
+import Icone from '../Icone.astro';
+import ListeSommaire from './ListeSommaire.astro';
+import type { EntreeRevision } from './types.ts';
+import type { Section } from '../../lib/cours.ts';
+
+interface Props {
+  sections: Section[];
+  revisions: EntreeRevision[];
+  duree: number;
+}
+
+const { sections, revisions, duree } = Astro.props;
+---
+
+<dialog class="feuille-sommaire" id="lecteur-feuille-sommaire" aria-labelledby="lecteur-feuille-sommaire-titre">
+  <div class="feuille-sommaire__poignee" aria-hidden="true"></div>
+  <div class="feuille-sommaire__tete">
+    <h2 class="feuille-sommaire__titre" id="lecteur-feuille-sommaire-titre">Sommaire</h2>
+    <button class="btn btn--icone feuille-sommaire__fermer" type="button" data-fermer-feuille-sommaire aria-label="Fermer le sommaire">
+      <Icone nom="fermer" taille={20} />
+    </button>
+  </div>
+  <div class="feuille-sommaire__corps">
+    <ListeSommaire sections={sections} revisions={revisions} duree={duree} titreId="lecteur-feuille-sommaire-titre" afficherTitre={false} />
+  </div>
+</dialog>
+
+<style>
+  .feuille-sommaire {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: 560px;
+    max-height: min(82dvh, 720px);
+    margin: 0 auto;
+    padding: var(--s-2) var(--s-3) calc(var(--s-4) + var(--safe-bottom));
+    border: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    background: var(--c-surface);
+    box-shadow: var(--sh-3);
+    color: var(--c-ink);
+    overflow: hidden;
+  }
+
+  .feuille-sommaire[open] {
+    display: flex;
+    flex-direction: column;
+    animation: feuille-monter var(--d-3) var(--ease-out);
+  }
+
+  .feuille-sommaire::backdrop { background: var(--c-overlay); }
+
+  @keyframes feuille-monter {
+    from { transform: translateY(32px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+
+  /* Tablette : panneau centré plutôt qu'une feuille collée en bas. */
+  @media (min-width: 600px) {
+    .feuille-sommaire {
+      inset: 0;
+      margin: auto;
+      width: min(480px, calc(100% - 2 * var(--s-6)));
+      height: fit-content;
+      padding: var(--s-4) var(--s-4) var(--s-5);
+      border-radius: var(--r-xl);
+    }
+
+    .feuille-sommaire__poignee { display: none; }
+  }
+
+  .feuille-sommaire__poignee {
+    width: 36px;
+    height: 5px;
+    margin: 0 auto var(--s-2);
+    border-radius: var(--r-full);
+    background: var(--c-line-strong);
+    flex: none;
+  }
+
+  .feuille-sommaire__tete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 var(--s-2) var(--s-2);
+    flex: none;
+  }
+
+  .feuille-sommaire__titre { font: var(--t-title3); letter-spacing: var(--t-title3-track); }
+
+  .feuille-sommaire__fermer {
+    --btn-bg: color-mix(in srgb, var(--c-ink) 7%, transparent);
+    --btn-ink: var(--c-ink-2);
+  }
+
+  .feuille-sommaire__corps {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+</style>

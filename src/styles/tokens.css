@@ -1,0 +1,192 @@
+/*
+ * Manabi 学び — tokens du design system « Wabi-Apple » (docs/CONCEPTION.md §2).
+ * Thème piloté par <html data-theme="light|dark"> ; le script anti-flash du <head>
+ * résout le choix « auto » avec prefers-color-scheme avant le premier rendu.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ─── Couleurs : thème clair « Washi » ─── */
+  --c-bg: #f6f5f2; /* kinari 生成り, fond de page */
+  --c-bg-grouped: #efede8; /* zones en creux, listes groupées */
+  --c-surface: #ffffff; /* cartes */
+  --c-surface-2: #fbfaf8; /* cartes secondaires */
+  --c-glass: rgb(255 255 255 / 0.72); /* matériau translucide (nav) */
+  --c-glass-opaque: #fbfaf8; /* repli sans backdrop-filter */
+  --c-ink: #1d1b20; /* sumi 墨 — texte principal */
+  --c-ink-2: #55505a; /* texte secondaire */
+  --c-ink-3: #6f6a73; /* légendes */
+  --c-line: rgb(29 27 32 / 0.1);
+  --c-line-strong: rgb(29 27 32 / 0.18);
+  --c-accent: #b4405f; /* sakura profond — boutons, liens */
+  --c-accent-ink: #8e2f49; /* texte sur fond accent doux */
+  --c-accent-soft: #f9e6eb; /* fond accent doux */
+  --c-on-accent: #ffffff;
+  --c-petal-1: #f4c2cf;
+  --c-petal-2: #efa9bb;
+  --c-hanko: #c8382a; /* vermillon du tampon 済 */
+  --c-focus: #b4405f; /* anneau de focus clavier */
+  --c-overlay: rgb(29 27 32 / 0.32); /* voile derrière une feuille / palette */
+
+  /* ─── Blocs : fond / texte / accent (+ kanji) ─── */
+  --b-essentiel-bg: #fbeff2; --b-essentiel-ink: #8e2f49; --b-essentiel-accent: #b4405f; /* 桜 */
+  --b-quoi-bg: #eaf0f8;      --b-quoi-ink: #23466f;      --b-quoi-accent: #2e5a8f;      /* 藍 */
+  --b-exemple-bg: #eef3e7;   --b-exemple-ink: #3e5a24;   --b-exemple-accent: #5c7f35;   /* 抹茶 */
+  --b-piege-bg: #fbede9;     --b-piege-ink: #9a2e1c;     --b-piege-accent: #c8452f;     /* 朱 */
+  --b-ou-bg: #f0eef8;        --b-ou-ink: #4d3f8a;        --b-ou-accent: #6a5bb0;        /* 藤 */
+  --b-astuce-bg: #fbf3e2;    --b-astuce-ink: #7a5310;    --b-astuce-accent: #b7791f;    /* 山吹 */
+  --b-definition-bg: #eef0f3; --b-definition-ink: #2a3340; --b-definition-accent: #4a5668; /* 紺 */
+  --b-info-bg: #e8f3f7;      --b-info-ink: #1f5566;      --b-info-accent: #2f7d95;      /* 空 */
+  --b-retenir-bg: var(--b-info-bg); --b-retenir-ink: var(--b-info-ink); --b-retenir-accent: var(--b-info-accent);
+  --b-attention-bg: var(--b-piege-bg); --b-attention-ink: var(--b-piege-ink); --b-attention-accent: var(--b-piege-accent);
+
+  /* ─── Couleurs de matière (champ « couleur ») : accent / fond doux / texte ─── */
+  --m-sakura: var(--b-essentiel-accent);  --m-sakura-soft: var(--b-essentiel-bg);  --m-sakura-ink: var(--b-essentiel-ink);
+  --m-ai: var(--b-quoi-accent);           --m-ai-soft: var(--b-quoi-bg);           --m-ai-ink: var(--b-quoi-ink);
+  --m-matcha: var(--b-exemple-accent);    --m-matcha-soft: var(--b-exemple-bg);    --m-matcha-ink: var(--b-exemple-ink);
+  --m-shu: var(--b-piege-accent);         --m-shu-soft: var(--b-piege-bg);         --m-shu-ink: var(--b-piege-ink);
+  --m-fuji: var(--b-ou-accent);           --m-fuji-soft: var(--b-ou-bg);           --m-fuji-ink: var(--b-ou-ink);
+  --m-yamabuki: var(--b-astuce-accent);   --m-yamabuki-soft: var(--b-astuce-bg);   --m-yamabuki-ink: var(--b-astuce-ink);
+  --m-kon: var(--b-definition-accent);    --m-kon-soft: var(--b-definition-bg);    --m-kon-ink: var(--b-definition-ink);
+  --m-sora: var(--b-info-accent);         --m-sora-soft: var(--b-info-bg);         --m-sora-ink: var(--b-info-ink);
+  --m-sumi: var(--c-ink);                 --m-sumi-soft: var(--c-bg-grouped);      --m-sumi-ink: var(--c-ink);
+
+  /* ─── Code (palette Rosé Pine Dawn) ─── */
+  --code-bg: #faf4ed;
+  --code-surface: #f2e9e1;
+  --code-texte: #575279;
+  --code-texte-2: #797593;
+  --code-surligne: rgb(180 64 95 / 0.1);
+  --code-ajout: rgb(92 127 53 / 0.14);
+  --code-retrait: rgb(200 69 47 / 0.12);
+
+  /* ─── Typographie ─── */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text",
+    "Segoe UI", system-ui, sans-serif;
+  --font-read: "Atkinson Hyperlegible Next Variable", var(--font-ui);
+  --font-kanji: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", serif;
+  --font-mono: "JetBrains Mono Variable", "SF Mono", "Cascadia Code", Consolas, monospace;
+
+  /* Styles de texte (font raccourci + approche) — inspirés des text styles Apple. */
+  --t-large: 700 2.125rem/1.15 var(--font-ui);     --t-large-track: -0.022em;
+  --t-title1: 700 1.75rem/1.2 var(--font-ui);      --t-title1-track: -0.02em;
+  --t-title2: 650 1.375rem/1.25 var(--font-ui);    --t-title2-track: -0.017em;
+  --t-title3: 600 1.25rem/1.3 var(--font-ui);      --t-title3-track: -0.012em;
+  --t-headline: 600 1.0625rem/1.35 var(--font-ui); --t-headline-track: -0.008em;
+  --t-body: 400 1.0625rem/1.55 var(--font-ui);
+  --t-read: 400 1.125rem/1.7 var(--font-read);
+  --t-callout: 400 1rem/1.5 var(--font-ui);
+  --t-subhead: 400 0.9375rem/1.45 var(--font-ui);
+  --t-footnote: 400 0.8125rem/1.4 var(--font-ui);
+  --t-caption: 500 0.75rem/1.35 var(--font-ui);    --t-caption-track: 0.01em;
+  --lecture-max: 68ch;
+  --user-scale: 1;
+
+  /* ─── Espace (grille 8 pt) ─── */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  /* ─── Rayons ─── */
+  --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-full: 999px;
+
+  /* ─── Ombres ─── */
+  --sh-1: 0 1px 2px rgb(20 16 24 / 0.05), 0 1px 1px rgb(20 16 24 / 0.03);
+  --sh-2: 0 2px 4px rgb(20 16 24 / 0.04), 0 8px 24px rgb(20 16 24 / 0.07);
+  --sh-3: 0 4px 8px rgb(20 16 24 / 0.05), 0 24px 48px rgb(20 16 24 / 0.12);
+
+  /* ─── Mouvement ─── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --d-1: 120ms; --d-2: 200ms; --d-3: 320ms; --d-4: 500ms;
+
+  /* ─── Mise en page (§2.6) ─── */
+  --sidebar-w: 264px;
+  --contenu-max: 1120px;
+  --toc-w: 220px;
+  --gouttiere: 16px;
+  --topbar-h: 52px;
+  --tabbar-h: 58px;
+  --cible: 44px; /* cible tactile minimale */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 1024px) {
+  :root { --gouttiere: 32px; }
+}
+
+/* ─── Thème sombre « Yoru 夜 » ─── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-bg: #121114;
+  --c-bg-grouped: #0c0b0e;
+  --c-surface: #1c1a1f;
+  --c-surface-2: #242228;
+  --c-glass: rgb(28 26 31 / 0.72);
+  --c-glass-opaque: #1c1a1f;
+  --c-ink: #f3f1f4;
+  --c-ink-2: #bdb7c1;
+  --c-ink-3: #948d98;
+  --c-line: rgb(255 255 255 / 0.09);
+  --c-line-strong: rgb(255 255 255 / 0.16);
+  --c-accent: #f08aa6;
+  --c-accent-ink: #f6bacb;
+  --c-accent-soft: #2a1820;
+  --c-on-accent: #2a0e17;
+  --c-petal-1: #7a3a4e;
+  --c-petal-2: #9a4a62;
+  --c-hanko: #e5533f;
+  --c-focus: #f08aa6;
+  --c-overlay: rgb(0 0 0 / 0.5);
+
+  --b-essentiel-bg: #2a1820; --b-essentiel-ink: #f6bacb; --b-essentiel-accent: #f08aa6;
+  --b-quoi-bg: #17222f;      --b-quoi-ink: #a9c6ea;      --b-quoi-accent: #6f9fd8;
+  --b-exemple-bg: #1a2216;   --b-exemple-ink: #bfd6a0;   --b-exemple-accent: #8db560;
+  --b-piege-bg: #2a1714;     --b-piege-ink: #f2b3a6;     --b-piege-accent: #e8735d;
+  --b-ou-bg: #1f1c2c;        --b-ou-ink: #c9c0f0;        --b-ou-accent: #9c8ee0;
+  --b-astuce-bg: #282011;    --b-astuce-ink: #efd08e;    --b-astuce-accent: #e0a63d;
+  --b-definition-bg: #1c2027; --b-definition-ink: #c3ccd8; --b-definition-accent: #8e9bb0;
+  --b-info-bg: #14242a;      --b-info-ink: #a3d6e5;      --b-info-accent: #5bb3cc;
+
+  --code-bg: #232136;
+  --code-surface: #2a273f;
+  --code-texte: #e0def4;
+  --code-texte-2: #908caa;
+  --code-surligne: rgb(240 138 166 / 0.12);
+  --code-ajout: rgb(141 181 96 / 0.16);
+  --code-retrait: rgb(232 115 93 / 0.16);
+
+  --sh-1: 0 1px 2px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --sh-2: 0 2px 6px rgb(0 0 0 / 0.4), 0 10px 28px rgb(0 0 0 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --sh-3: 0 6px 12px rgb(0 0 0 / 0.45), 0 28px 56px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+/* Police de lecture « système » (réglage). */
+[data-font="systeme"] {
+  --font-read: var(--font-ui);
+}
+
+/* Animations réduites : réglage du site OU préférence du système. */
+[data-motion="reduit"] {
+  --d-1: 0.01ms; --d-2: 0.01ms; --d-3: 0.01ms; --d-4: 0.01ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-1: 0.01ms; --d-2: 0.01ms; --d-3: 0.01ms; --d-4: 0.01ms;
+  }
+}
+
+/* Couleur de matière portée par data-couleur : --couleur, --couleur-soft, --couleur-ink. */
+[data-couleur] { --couleur: var(--m-sumi); --couleur-soft: var(--m-sumi-soft); --couleur-ink: var(--m-sumi-ink); }
+[data-couleur="sakura"] { --couleur: var(--m-sakura); --couleur-soft: var(--m-sakura-soft); --couleur-ink: var(--m-sakura-ink); }
+[data-couleur="ai"] { --couleur: var(--m-ai); --couleur-soft: var(--m-ai-soft); --couleur-ink: var(--m-ai-ink); }
+[data-couleur="matcha"] { --couleur: var(--m-matcha); --couleur-soft: var(--m-matcha-soft); --couleur-ink: var(--m-matcha-ink); }
+[data-couleur="shu"] { --couleur: var(--m-shu); --couleur-soft: var(--m-shu-soft); --couleur-ink: var(--m-shu-ink); }
+[data-couleur="fuji"] { --couleur: var(--m-fuji); --couleur-soft: var(--m-fuji-soft); --couleur-ink: var(--m-fuji-ink); }
+[data-couleur="yamabuki"] { --couleur: var(--m-yamabuki); --couleur-soft: var(--m-yamabuki-soft); --couleur-ink: var(--m-yamabuki-ink); }
+[data-couleur="kon"] { --couleur: var(--m-kon); --couleur-soft: var(--m-kon-soft); --couleur-ink: var(--m-kon-ink); }
+[data-couleur="sora"] { --couleur: var(--m-sora); --couleur-soft: var(--m-sora-soft); --couleur-ink: var(--m-sora-ink); }

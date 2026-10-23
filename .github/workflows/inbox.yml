@@ -1,0 +1,124 @@
+# inbox/ → cours : un PDF, des images ou un .md déposé dans inbox/ devient un cours (API Claude),
+# puis le site est redéployé. Sans le secret ANTHROPIC_API_KEY, le workflow explique quoi faire
+# et se termine sans erreur.
+name: Inbox → cours
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "inbox/**"
+      - "!inbox/README.md"
+      - "!inbox/_a-revoir/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: inbox
+  cancel-in-progress: false
+
+jobs:
+  generer:
+    name: Générer les cours
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      commit: ${{ steps.publier.outputs.commit }}
+      sha: ${{ steps.publier.outputs.sha }}
+    steps:
+      - name: Chercher la clé API
+        id: cle
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "presente=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "presente=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Inbox::Secret ANTHROPIC_API_KEY absent : aucun cours généré (voir le résumé)."
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### Inbox : rien n'a été généré
+
+          Le secret **ANTHROPIC_API_KEY** n'existe pas encore. Ce n'est pas une erreur : tes fichiers restent dans `inbox/`.
+
+          **Pour activer la génération automatique :**
+          1. Crée une clé sur https://console.anthropic.com (Settings → API Keys) et mets un plafond de dépenses (Settings → Limits).
+          2. Sur GitHub : Settings → Secrets and variables → Actions → **New repository secret**.
+          3. Name : `ANTHROPIC_API_KEY`, Secret : ta clé, puis **Add secret**.
+          4. Relance : onglet Actions → « Inbox → cours » → **Run workflow**.
+
+          Facultatif : une variable `MANABI_MODELE` (onglet Variables) pour changer de modèle, par exemple `claude-opus-5-5`.
+
+          **Sans clé :** copie le prompt universel (`PROMPT-COURS.md`) dans n'importe quelle IA, ou utilise l'Atelier du site.
+          EOF
+
+      - name: Récupérer le code
+        if: steps.cle.outputs.presente == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Installer Node 24
+        if: steps.cle.outputs.presente == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        if: steps.cle.outputs.presente == 'true'
+        run: npm ci
+
+      - name: Transformer inbox/ en cours
+        if: steps.cle.outputs.presente == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MANABI_MODELE: ${{ vars.MANABI_MODELE }}
+          TZ: Europe/Paris
+        run: node scripts/generer-cours.mjs
+
+      # Même si une source a échoué, on garde les cours déjà créés.
+      - name: Enregistrer les nouveaux cours
+        id: publier
+        if: ${{ !cancelled() && steps.cle.outputs.presente == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- src/content inbox
+          if [ -d public/media ]; then git add -A -- public/media; fi
+          if git diff --cached --quiet; then
+            echo "Aucun changement à enregistrer."
+            echo "commit=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "inbox : nouveaux cours générés"
+            echo ""
+            git diff --cached --name-only --diff-filter=A -- src/content/cours | sed 's/^/- /'
+          } > "$RUNNER_TEMP/message.txt"
+          git commit --quiet -F "$RUNNER_TEMP/message.txt"
+          for essai in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "commit=true" >> "$GITHUB_OUTPUT"
+              echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Push refusé (main a bougé) : je récupère les nouveautés et je réessaie."
+            git pull --rebase origin main
+          done
+          echo "::error::Impossible de pousser les nouveaux cours sur main."
+          exit 1
+
+  # Un push fait avec GITHUB_TOKEN ne relance pas les autres workflows : on appelle le déploiement.
+  deployer:
+    name: Déployer le site
+    needs: generer
+    if: ${{ !cancelled() && needs.generer.outputs.commit == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.generer.outputs.sha }}

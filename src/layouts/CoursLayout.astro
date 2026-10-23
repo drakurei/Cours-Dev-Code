@@ -1,0 +1,780 @@
+---
+/**
+ * Lecteur de cours (§5) — rendu COMPLET et statique, utilisable sans JavaScript.
+ *
+ * Ordre : fil d'Ariane → titre + méta + ensō → L'essentiel (要) → Fiche projet (作, si projet)
+ *       → À retenir (覚) → corps (notions ##) → Documents (書) → Définitions (辞)
+ *       → Exercices (練) → Quiz (問) → Flashcards (札) → « J'ai compris ce cours » + hanko → épisodes voisins.
+ * Sommaire à droite à partir de 1280 px.
+ *
+ * Points d'extension pour les îlots interactifs (la version statique sert de repli) :
+ *   <Fragment slot="exercices">…</Fragment>   dans <section id="exercices" data-cours-id>
+ *   <Fragment slot="quiz">…</Fragment>        dans <section id="quiz" data-cours-id>
+ *   <Fragment slot="flashcards">…</Fragment>  dans <section id="flashcards" data-cours-id>
+ *   <Fragment slot="outils">…</Fragment>      sous l'en-tête (Mode Focus, etc.)
+ * Les données déjà rendues sont dans la prop `donnees` (src/lib/donnees-cours.ts).
+ * Ids stables : chaque ## a un id (src/lib/markdown/titres.ts) et vit dans
+ * <section class="notion" data-notion="id"> à l'intérieur de #contenu-cours[data-notions-cours].
+ *
+ * Avec JavaScript (src/scripts/lecteur/) : barre de lecture, sommaire qui suit la lecture (+ feuille
+ * mobile), « Écouter » sur chaque notion, Mode Focus (F) et raccourcis J / K. Voir docs/API.md.
+ */
+import BaseLayout from './BaseLayout.astro';
+import Enso from '../components/Enso.astro';
+import Hanko from '../components/Hanko.astro';
+import Kanji from '../components/Kanji.astro';
+import Puce from '../components/Puce.astro';
+import Icone from '../components/Icone.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import AidesExercice from '../components/AidesExercice.astro';
+import BarreLecture from '../components/lecteur/BarreLecture.astro';
+import OutilsLecteur from '../components/lecteur/OutilsLecteur.astro';
+import ListeSommaire from '../components/lecteur/ListeSommaire.astro';
+import FeuilleSommaire from '../components/lecteur/FeuilleSommaire.astro';
+import FocusTete from '../components/lecteur/FocusTete.astro';
+import FocusPied from '../components/lecteur/FocusPied.astro';
+import FocusFin from '../components/lecteur/FocusFin.astro';
+import EpisodeSuivant from '../components/lecteur/EpisodeSuivant.astro';
+import IconeLecteur from '../components/lecteur/IconeLecteur.astro';
+import type { EntreeRevision } from '../components/lecteur/types.ts';
+import '../styles/lecteur.css';
+import type { CoursVue, Section, Voisins } from '../lib/cours.ts';
+import type { DonneesCours } from '../lib/donnees-cours.ts';
+import { KANJI_BLOCS, KANJI_SECTIONS } from '../lib/kanji.ts';
+import {
+  formaterDate,
+  NIVEAUX_EXERCICE_LIBELLES,
+  NIVEAUX_LIBELLES,
+  STATUTS_PROJET_LIBELLES,
+  TYPES_LIBELLES,
+} from '../lib/libelles.ts';
+import { pluriel } from '../lib/texte.ts';
+import { urlMedia, urlTome } from '../lib/url.ts';
+
+interface Props {
+  cours: CoursVue;
+  sections: Section[];
+  voisins: Voisins;
+  donnees: DonneesCours;
+}
+
+const { cours, sections, voisins, donnees } = Astro.props;
+const { data, matiere } = cours;
+const S = KANJI_SECTIONS;
+const projet = cours.estProjet ? data.projet : undefined;
+
+// Sections de révision présentes (pour le sommaire), avec leur nombre d'éléments.
+const revision = (id: string, k: { kanji: string; libelle: string }, nombre: number, bloc: EntreeRevision['bloc']): EntreeRevision[] =>
+  nombre > 0 ? [{ id, kanji: k.kanji, libelle: k.libelle, nombre, bloc }] : [];
+const revisions: EntreeRevision[] = [
+  ...revision('documents', S.documents, data.fichiers.length, 'quoi'),
+  ...revision('definitions', S.definition, donnees.definitions.length, 'definition'),
+  ...revision('exercices', S.exercice, donnees.exercices.length, 'exemple'),
+  ...revision('quiz', S.quiz, donnees.quiz.length, 'astuce'),
+  ...revision('flashcards', S.flashcard, donnees.flashcards.length, 'info'),
+];
+
+const lettres = ['A', 'B', 'C', 'D', 'E', 'F'];
+const estPdf = (chemin: string) => /\.pdf($|[?#])/i.test(chemin);
+const estImage = (chemin: string) => /\.(png|jpe?g|webp|gif|avif|svg)($|[?#])/i.test(chemin);
+---
+
+<BaseLayout titre={data.titre} description={data.essentiel} pageActive="tomes" lecture largeur="large">
+  <!-- Mode Focus repris (rechargement, épisode enchaîné) : on masque la page avant son premier rendu.
+       Garde-fou : si le script du lecteur ne prend pas la main, la page réapparaît. -->
+  <script is:inline define:vars={{ coursFocus: cours.id }}>
+    try {
+      var memoire = JSON.parse(sessionStorage.getItem('manabi:focus') || 'null');
+      if (memoire && memoire.coursId === coursFocus && memoire.actif === true) {
+        var racine = document.documentElement;
+        racine.setAttribute('data-focus', 'attente');
+        setTimeout(function () {
+          if (racine.getAttribute('data-focus') === 'attente') racine.removeAttribute('data-focus');
+        }, 4000);
+      }
+    } catch (e) {}
+  </script>
+
+  <BarreLecture />
+
+  <div class="lecteur" data-couleur={matiere.couleur} data-cours-visite={cours.id} data-lecteur={cours.id} data-duree={cours.duree}>
+    <FocusTete titre={data.titre} chapitre={cours.chapitre} />
+
+    <article class="lecteur__article" aria-labelledby="titre-cours">
+      <!-- 1. Fil d'Ariane + outils (Sommaire, Mode Focus), titre, méta, ensō -->
+      <OutilsLecteur matiere={matiere} chapitre={cours.chapitre} />
+
+      <header class="cours-tete">
+        <div class="cours-tete__texte">
+          <p class="cours-tete__episode">
+            <Kanji kanji={matiere.kanji} lecture={matiere.lecture} taille="xs" couleur={matiere.couleur} />
+            <span>{matiere.nom} · Chapitre {cours.chapitre}</span>
+          </p>
+          <h1 class="cours-tete__titre" id="titre-cours" data-grand-titre>{data.titre}</h1>
+          <ul class="cours-tete__meta" role="list" aria-label="Informations">
+            <li><Puce><Icone nom="horloge" taille={14} />{cours.duree} min</Puce></li>
+            <li><Puce>{NIVEAUX_LIBELLES[data.niveau]}</Puce></li>
+            {data.type !== 'cours' && <li><Puce variante="couleur" couleur={matiere.couleur}>{TYPES_LIBELLES[data.type]}</Puce></li>}
+            {data.date && <li><Puce><time datetime={data.date}>{formaterDate(data.date)}</time></Puce></li>}
+            {data.source && <li class="cours-tete__meta-source"><Puce variante="contour" class="cours-tete__source">{data.source}</Puce></li>}
+          </ul>
+        </div>
+        <div class="cours-tete__progression">
+          <Enso taille={76} coursId={cours.id} sections={sections.length} libelle="Progression du cours" afficherValeur />
+          <Hanko taille={52} coursId={cours.id} class="cours-tete__hanko" />
+        </div>
+      </header>
+
+      <slot name="outils" />
+
+      <!-- 2. L'essentiel en 30 s -->
+      <section id="essentiel" class="bloc bloc--essentiel bloc--grand lecteur__section" aria-labelledby="essentiel-titre">
+        <div class="essentiel__tete">
+          <h2 class="bloc__tete" id="essentiel-titre">
+            <span class="kanji" lang="ja" aria-hidden="true" title={KANJI_BLOCS.essentiel.lecture}>{KANJI_BLOCS.essentiel.kanji}</span>
+            <span class="bloc__titre">{KANJI_BLOCS.essentiel.libelle}</span>
+          </h2>
+          <button class="btn btn--discret essentiel__ecouter" type="button" data-ecouter="#essentiel-texte" hidden>
+            <Icone nom="haut-parleur" taille={18} class="ecouter__parler" />
+            <IconeLecteur nom="arret" taille={18} class="ecouter__arret" />
+            <span class="essentiel__ecouter-libelle" data-libelle>Écouter</span>
+            <span class="sr-only"> : l’essentiel</span>
+          </button>
+        </div>
+        <div class="bloc__corps">
+          <p id="essentiel-texte" set:html={donnees.essentielHtml} />
+        </div>
+      </section>
+
+      <!-- Fiche projet (type: projet) -->
+      {
+        cours.estProjet && (
+          <section id="fiche-projet" class="carte fiche-projet lecteur__section" aria-labelledby="fiche-projet-titre">
+            <EnTeteSection niveau={2} kanji={S.projet.kanji} lecture={S.projet.lecture} titre={S.projet.libelle} id="fiche-projet-titre" couleur={matiere.couleur} />
+            <dl class="fiche-projet__liste">
+              {projet?.stack.length ? (
+                <div>
+                  <dt>Stack</dt>
+                  <dd>
+                    <ul class="rangee" role="list">
+                      {projet.stack.map((s) => <li><Puce variante="couleur" couleur={matiere.couleur}>{s}</Puce></li>)}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
+              {projet?.role && (
+                <div>
+                  <dt>Rôle</dt>
+                  <dd>{projet.role}</dd>
+                </div>
+              )}
+              {projet?.statut && (
+                <div>
+                  <dt>Statut</dt>
+                  <dd><Puce variante={projet.statut === 'termine' ? 'accent' : 'neutre'}>{STATUTS_PROJET_LIBELLES[projet.statut]}</Puce></dd>
+                </div>
+              )}
+            </dl>
+            {(projet?.repo || projet?.demo) && (
+              <div class="rangee fiche-projet__liens">
+                {projet.repo && (
+                  <a class="btn btn--secondaire" href={projet.repo} target="_blank" rel="noopener">
+                    <Icone nom="code" taille={18} />Voir le code<span class="sr-only"> (nouvel onglet)</span>
+                  </a>
+                )}
+                {projet.demo && (
+                  <a class="btn btn--secondaire" href={projet.demo} target="_blank" rel="noopener">
+                    <Icone nom="ecran" taille={18} />Voir la démo<span class="sr-only"> (nouvel onglet)</span>
+                  </a>
+                )}
+              </div>
+            )}
+            {!projet && <p class="t-subhead t-secondaire">Ajoute un bloc « projet: » au frontmatter (stack, rôle, statut, repo, démo) pour remplir cette fiche.</p>}
+          </section>
+        )
+      }
+
+      <!-- 3. À retenir -->
+      {
+        donnees.retenirHtml.length > 0 && (
+          <section id="retenir" class="bloc bloc--retenir lecteur__section" aria-labelledby="retenir-titre">
+            <h2 class="bloc__tete" id="retenir-titre">
+              <span class="kanji" lang="ja" aria-hidden="true" title={S.retenir.lecture}>{S.retenir.kanji}</span>
+              <span class="bloc__titre">{S.retenir.libelle}</span>
+            </h2>
+            <div class="bloc__corps">
+              <ul class="retenir__liste">
+                {donnees.retenirHtml.map((html) => <li set:html={html} />)}
+              </ul>
+            </div>
+          </section>
+        )
+      }
+
+      <!-- 4. Corps : les notions -->
+      <div class="prose lecteur__corps" id="contenu-cours" data-notions-cours={cours.id}>
+        <slot />
+      </div>
+
+      <!-- 5. Documents -->
+      {
+        data.fichiers.length > 0 && (
+          <section id="documents" class="lecteur__section lecteur__revision" aria-labelledby="documents-titre">
+            <EnTeteSection niveau={2} kanji={S.documents.kanji} lecture={S.documents.lecture} titre={S.documents.libelle} id="documents-titre" />
+            <ul class="documents" role="list">
+              {data.fichiers.map((f) => (
+                <li>
+                  <a class="document" href={urlMedia(f.chemin)} target="_blank" rel="noopener">
+                    <span class="document__icone">
+                      <Icone nom={estImage(f.chemin) ? 'image' : 'document'} taille={20} />
+                    </span>
+                    <span class="document__texte">
+                      <span class="document__titre">{f.titre}</span>
+                      <span class="document__type">{estPdf(f.chemin) ? 'PDF' : estImage(f.chemin) ? 'Image' : 'Fichier'}</span>
+                    </span>
+                    <span class="document__ouvrir">Ouvrir<span class="sr-only"> (nouvel onglet)</span><Icone nom="externe" taille={16} /></span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      <!-- 6a. Définitions -->
+      {
+        donnees.definitions.length > 0 && (
+          <section id="definitions" class="lecteur__section lecteur__revision" aria-labelledby="definitions-titre">
+            <EnTeteSection niveau={2} kanji={S.definition.kanji} lecture={S.definition.lecture} titre={S.definition.libelle} id="definitions-titre" />
+            <dl class="definitions">
+              {donnees.definitions.map((d) => (
+                <div class="definition">
+                  <dt class="definition__terme" set:html={d.termeHtml} />
+                  <dd class="definition__texte" set:html={d.definitionHtml} />
+                  {d.exempleHtml && (
+                    <dd class="definition__exemple">
+                      <span class="definition__label">Exemple</span>
+                      <Fragment set:html={d.exempleHtml} />
+                    </dd>
+                  )}
+                </div>
+              ))}
+            </dl>
+          </section>
+        )
+      }
+
+      <!-- 6b. Exercices : indices progressifs puis solution -->
+      {
+        donnees.exercices.length > 0 && (
+          <section id="exercices" class="lecteur__section lecteur__revision" data-cours-id={cours.id} aria-labelledby="exercices-titre">
+            <EnTeteSection
+              niveau={2}
+              kanji={S.exercice.kanji}
+              lecture={S.exercice.lecture}
+              titre={S.exercice.libelle}
+              id="exercices-titre"
+              sousTitre="Essaie d’abord seul. Ouvre un indice seulement si tu bloques."
+            />
+            <slot name="exercices">
+              <ol class="exercices" role="list">
+                {donnees.exercices.map((e) => (
+                  <li>
+                    <details class="exercice" data-exercice={e.cle}>
+                      <summary class="exercice__resume">
+                        <span class="exercice__num">Exercice {e.index + 1}</span>
+                        <span class="exercice__titre" set:html={e.titreHtml} />
+                        <Puce variante={e.niveau === 'difficile' ? 'accent' : 'neutre'}>{NIVEAUX_EXERCICE_LIBELLES[e.niveau]}</Puce>
+                      </summary>
+                      <div class="exercice__corps">
+                        <div class="exercice__enonce" set:html={e.enonceHtml} />
+                        {e.indicesHtml.length > 0 || e.solutionHtml ? (
+                          <div class="exercice__aides">
+                            <AidesExercice indices={e.indicesHtml} solution={e.solutionHtml} />
+                          </div>
+                        ) : null}
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ol>
+            </slot>
+          </section>
+        )
+      }
+
+      <!-- 6c. Quiz (version statique : réponse dans un dépliant) -->
+      {
+        donnees.quiz.length > 0 && (
+          <section id="quiz" class="lecteur__section lecteur__revision" data-cours-id={cours.id} aria-labelledby="quiz-titre">
+            <EnTeteSection
+              niveau={2}
+              kanji={S.quiz.kanji}
+              lecture={S.quiz.lecture}
+              titre={S.quiz.libelle}
+              id="quiz-titre"
+              sousTitre={pluriel(donnees.quiz.length, 'question')}
+            />
+            <slot name="quiz">
+              <ol class="quiz" role="list">
+                {donnees.quiz.map((q) => (
+                  <li class="carte question">
+                    <p class="question__num">Question {q.index + 1}</p>
+                    <p class="question__texte" set:html={q.questionHtml} />
+                    <ol class="question__choix" role="list">
+                      {q.choix.map((c, i) => (
+                        <li class="choix">
+                          <span class="choix__lettre" aria-hidden="true">{lettres[i]}</span>
+                          <span set:html={c.html} />
+                        </li>
+                      ))}
+                    </ol>
+                    <details class="aide aide--reponse">
+                      <summary>Voir la réponse</summary>
+                      <div class="aide__corps">
+                        <p class="reponse">
+                          <strong>{lettres[q.reponseIndex]}.</strong> <span set:html={q.choix[q.reponseIndex]?.html ?? ''} />
+                        </p>
+                        {q.explicationHtml && <Fragment set:html={q.explicationHtml} />}
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ol>
+            </slot>
+          </section>
+        )
+      }
+
+      <!-- 6d. Flashcards (version statique : retourner = déplier) -->
+      {
+        donnees.flashcards.length > 0 && (
+          <section id="flashcards" class="lecteur__section lecteur__revision" data-cours-id={cours.id} aria-labelledby="flashcards-titre">
+            <EnTeteSection
+              niveau={2}
+              kanji={S.flashcard.kanji}
+              lecture={S.flashcard.lecture}
+              titre={S.flashcard.libelle}
+              id="flashcards-titre"
+              sousTitre={`${pluriel(donnees.flashcards.length, 'carte')} · réponds dans ta tête, puis retourne la carte.`}
+            />
+            <slot name="flashcards">
+              <ul class="flashcards" role="list">
+                {donnees.flashcards.map((f) => (
+                  <li>
+                    <details class="flashcard" data-carte={f.id}>
+                      <summary class="flashcard__recto">
+                        <span class="flashcard__face" lang="ja" aria-hidden="true">問</span>
+                        <span set:html={f.qHtml} />
+                      </summary>
+                      <div class="flashcard__verso" set:html={f.rHtml} />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            </slot>
+          </section>
+        )
+      }
+
+      <!-- 7. Fin du cours -->
+      <section id="fin-du-cours" class="fin lecteur__section" aria-label="Fin du cours" data-statut-cours={cours.id} data-statut="a-lire">
+        <div class="fin__tampon">
+          <Hanko taille={88} coursId={cours.id} lignes />
+          <span class="fin__vide" lang="ja" aria-hidden="true">済</span>
+        </div>
+        <p class="fin__texte fin__texte--avant">Tu as tout lu ? Tamponne le cours pour le ranger dans tes révisions.</p>
+        <p class="fin__texte fin__texte--apres">Cours tamponné. Ses cartes rejoignent tes révisions.</p>
+        <button class="btn btn--primaire btn--grand fin__bouton" type="button" data-action="terminer" data-cours-id={cours.id} aria-pressed="false">
+          <Icone nom="coche" taille={20} />
+          <span data-libelle>J’ai compris ce cours</span>
+        </button>
+        <!-- Après « J'ai compris » : la suite, mise en avant (cachée tant que le cours n'est pas tamponné). -->
+        <EpisodeSuivant suivant={voisins.suivant} matiere={matiere} />
+      </section>
+
+      <!-- Dernière étape du Mode Focus (affichée seulement en Focus). -->
+      <FocusFin coursId={cours.id} suivant={voisins.suivant} matiere={matiere} />
+
+      <nav class="voisins" aria-label="Épisodes du tome">
+        {
+          voisins.precedent ? (
+            <a class="carte carte--interactive voisin voisin--precedent" href={voisins.precedent.url} rel="prev">
+              <span class="voisin__sens"><Icone nom="chevron-gauche" taille={16} />Épisode précédent</span>
+              <span class="voisin__titre"><span lang="ja" aria-hidden="true">第{voisins.precedent.chapitre}話</span> {voisins.precedent.data.titre}</span>
+            </a>
+          ) : (
+            <span class="voisin voisin--vide" aria-hidden="true" />
+          )
+        }
+        {
+          voisins.suivant ? (
+            <a class="carte carte--interactive voisin voisin--suivant" href={voisins.suivant.url} rel="next">
+              <span class="voisin__sens">Épisode suivant<Icone nom="chevron-droite" taille={16} /></span>
+              <span class="voisin__titre"><span lang="ja" aria-hidden="true">第{voisins.suivant.chapitre}話</span> {voisins.suivant.data.titre}</span>
+            </a>
+          ) : (
+            <a class="carte carte--interactive voisin voisin--suivant" href={urlTome(matiere.slug)}>
+              <span class="voisin__sens">Fin du tome<Icone nom="chevron-droite" taille={16} /></span>
+              <span class="voisin__titre">Retour au tome {matiere.nom}</span>
+            </a>
+          )
+        }
+      </nav>
+    </article>
+
+    <FocusPied />
+
+    <!-- Sommaire (≥ 1280 px) ; en dessous, le bouton « Sommaire » ouvre la même liste en feuille. -->
+    <aside class="sommaire" aria-label="Sommaire du cours">
+      <div class="sommaire__nav">
+        <ListeSommaire sections={sections} revisions={revisions} duree={cours.duree} titreId="lecteur-sommaire-titre" />
+      </div>
+    </aside>
+
+    <FeuilleSommaire sections={sections} revisions={revisions} duree={cours.duree} />
+
+    <!-- Annonces du Mode Focus (hors de l'en-tête et du pied, qui disparaissent en sortant). -->
+    <p class="sr-only" aria-live="polite" data-focus-annonce></p>
+  </div>
+</BaseLayout>
+
+<script>
+  import '../scripts/lecteur/index.ts';
+</script>
+
+<style>
+  .lecteur {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-7);
+  }
+
+  /* Colonne de lecture + sommaire, groupés : pas de grand vide entre les deux. */
+  @media (min-width: 1280px) {
+    .lecteur {
+      grid-template-columns: minmax(0, calc(var(--lecture-max) + 4rem)) var(--toc-w);
+      justify-content: center;
+      gap: var(--s-7);
+    }
+  }
+
+  .lecteur__article {
+    display: grid;
+    gap: var(--s-6);
+    min-width: 0;
+    max-width: calc(var(--lecture-max) + 4rem);
+  }
+
+  .lecteur__article > * { min-width: 0; }
+
+  /* Les blocs suivent la colonne de lecture ; seuls les sections de révision s'élargissent un peu. */
+  .lecteur__section,
+  .lecteur__corps { max-width: var(--lecture-max); }
+  .lecteur__revision { max-width: calc(var(--lecture-max) + 4rem); margin-top: var(--s-6); }
+
+  /* ─── En-tête du cours ─── */
+  .cours-tete {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--s-5);
+    margin-top: calc(-1 * var(--s-4));
+  }
+
+  .cours-tete__texte { display: grid; gap: var(--s-3); }
+
+  .cours-tete__episode {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    color: var(--couleur-ink);
+    font: 600 0.875rem/1.3 var(--font-ui);
+  }
+
+  .cours-tete__titre {
+    font: var(--t-large);
+    letter-spacing: var(--t-large-track);
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  }
+
+  .cours-tete__meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; }
+
+  /* Source souvent longue : elle passe à la ligne au lieu de faire déborder la page (.puce est en nowrap). */
+  .cours-tete__meta-source { min-width: 0; max-width: 100%; }
+
+  .cours-tete__meta :global(.cours-tete__source) {
+    max-width: 100%;
+    padding-block: 3px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .cours-tete__progression { position: relative; padding-top: var(--s-1); }
+
+  :global(.cours-tete__hanko) {
+    position: absolute;
+    right: -14px;
+    bottom: -18px;
+  }
+
+  @media (max-width: 599px) {
+    .cours-tete { grid-template-columns: 1fr; }
+    .cours-tete__progression { order: -1; justify-self: start; display: none; }
+  }
+
+  /* ─── L'essentiel ─── */
+  .essentiel__tete { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+  .essentiel__tete .bloc__tete { margin-bottom: var(--s-3); }
+  .essentiel__ecouter { margin: calc(-1 * var(--s-2)) calc(-1 * var(--s-3)) var(--s-2) 0; --btn-ink: var(--b-ink); }
+
+  .retenir__liste { display: grid; gap: var(--s-2); }
+
+  /* ─── Fiche projet ─── */
+  .fiche-projet { display: grid; gap: var(--s-4); }
+  .fiche-projet :global(.en-tete) { margin-bottom: 0; }
+  .fiche-projet__liste { display: grid; gap: var(--s-3); margin: 0; }
+  .fiche-projet__liste > div { display: grid; grid-template-columns: 88px 1fr; gap: var(--s-3); align-items: baseline; }
+  .fiche-projet__liste dt { color: var(--c-ink-3); font: var(--t-subhead); }
+  .fiche-projet__liste dd { margin: 0; font: var(--t-callout); }
+  .fiche-projet__liste ul { margin: 0; padding: 0; }
+
+  /* ─── Documents ─── */
+  .documents { display: grid; gap: var(--s-2); margin: 0; }
+
+  .document {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-height: 60px;
+    padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+    color: var(--c-ink);
+    text-decoration: none;
+    transition: box-shadow var(--d-2) var(--ease-out);
+  }
+
+  .document:hover { color: var(--c-ink); box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line); }
+
+  .document__icone {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-sm);
+    background: var(--b-definition-bg);
+    color: var(--b-definition-accent);
+  }
+
+  .document__texte { display: grid; flex: 1; min-width: 0; }
+  .document__titre { font: var(--t-headline); }
+  .document__type { color: var(--c-ink-3); font: var(--t-footnote); }
+  .document__ouvrir { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--c-accent); font: 600 0.9375rem/1 var(--font-ui); }
+
+  /* ─── Définitions ─── */
+  .definitions { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); margin: 0; }
+
+  .definition {
+    /* Un long mot sans espace (adresse email, URL) ne doit pas élargir la grille. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: var(--s-4) var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--b-definition-bg);
+  }
+
+  .definition__terme { color: var(--b-definition-ink); font: var(--t-headline); font-size: 1.0625rem; }
+  .definition__texte { margin: var(--s-1) 0 0; font: var(--t-callout); color: var(--c-ink); }
+  .definition__exemple { margin: var(--s-3) 0 0; font: var(--t-subhead); color: var(--c-ink-2); }
+  .definition__label { display: block; margin-bottom: var(--s-1); color: var(--c-ink-3); font: var(--t-caption); letter-spacing: 0.04em; text-transform: uppercase; }
+  .definition :global(code) { font-family: var(--font-mono); font-size: 0.875em; padding: 0.1em 0.35em; border-radius: var(--r-xs); background: color-mix(in srgb, var(--b-definition-accent) 12%, var(--c-surface)); }
+  .definition :global(p + p) { margin-top: var(--s-2); }
+
+  /* ─── Dépliants (exercices, quiz, flashcards) ─── */
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+
+  .exercices,
+  .quiz { display: grid; gap: var(--s-3); margin: 0; padding: 0; }
+
+  .exercice {
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  }
+
+  .exercice__resume {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-1) var(--s-3);
+    min-height: 60px;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+  }
+
+  .exercice__num { color: var(--c-ink-3); font: var(--t-footnote); font-weight: 600; }
+  .exercice__titre { flex: 1; min-width: 12ch; font: var(--t-headline); }
+
+  .exercice__corps { display: grid; gap: var(--s-4); padding: 0 var(--s-5) var(--s-5); }
+  .exercice__enonce { font: var(--t-read); font-size: 1.0625rem; }
+  .exercice__enonce :global(> * + *) { margin-top: var(--s-2); }
+
+  .exercice__aides { display: grid; }
+
+  /* ─── Quiz statique ─── */
+  .question { display: grid; gap: var(--s-3); }
+  .question__num { color: var(--c-ink-3); font: var(--t-footnote); font-weight: 600; }
+  .question__texte { font: var(--t-headline); font-size: 1.125rem; }
+  .question__choix { display: grid; gap: var(--s-2); margin: 0; padding: 0; }
+
+  .choix {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-sm);
+    background: var(--c-bg-grouped);
+    font: var(--t-callout);
+  }
+
+  .choix__lettre { color: var(--c-ink-3); font: 700 0.875rem/1 var(--font-ui); }
+  .reponse { color: var(--b-exemple-ink); }
+
+  /* ─── Flashcards statiques ─── */
+  .flashcards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: var(--s-3);
+    margin: 0;
+    padding: 0;
+  }
+
+  .flashcard {
+    height: 100%;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  }
+
+  .flashcard__recto {
+    display: flex;
+    gap: var(--s-3);
+    min-height: 96px;
+    padding: var(--s-4);
+    font: var(--t-headline);
+  }
+
+  .flashcard__face {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent-ink);
+    font: 700 0.9375rem/1 var(--font-kanji);
+  }
+
+  .flashcard__verso {
+    margin: 0 var(--s-4) var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px dashed var(--c-line-strong);
+    color: var(--c-ink-2);
+    font: var(--t-callout);
+  }
+
+  /* ─── Fin du cours ─── */
+  .fin {
+    max-width: calc(var(--lecture-max) + 4rem);
+    display: grid;
+    justify-items: center;
+    gap: var(--s-4);
+    margin-top: var(--s-7);
+    padding: var(--s-7) var(--s-5);
+    border-radius: var(--r-xl);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+    text-align: center;
+  }
+
+  .fin__tampon { position: relative; display: grid; place-items: center; width: 96px; height: 96px; }
+  .fin__tampon > :global(*) { grid-area: 1 / 1; }
+
+  /* Emplacement du tampon, en pointillé tant que le cours n'est pas fini. */
+  .fin__vide {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 2px var(--c-line-strong);
+    color: var(--c-line-strong);
+    font: 700 2.5rem/1 var(--font-kanji);
+    rotate: -8deg;
+    mask-image: repeating-linear-gradient(45deg, #000 0 6px, rgb(0 0 0 / 0.55) 6px 9px);
+  }
+
+  .fin__tampon:has(:global(.hanko:not([hidden]))) .fin__vide { display: none; }
+
+  .fin__texte { max-width: 40ch; color: var(--c-ink-2); font: var(--t-callout); }
+  .fin__texte--apres,
+  .fin[data-statut="termine"] .fin__texte--avant { display: none; }
+  .fin[data-statut="termine"] .fin__texte--apres { display: block; }
+
+  .fin__bouton[data-termine="true"] {
+    --btn-bg: var(--c-accent-soft);
+    --btn-ink: var(--c-accent-ink);
+    box-shadow: none;
+  }
+
+  /* ─── Épisodes voisins ─── */
+  .voisins {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-3);
+    max-width: calc(var(--lecture-max) + 4rem);
+  }
+
+  .voisin {
+    display: grid;
+    gap: var(--s-1);
+    padding: var(--s-4) var(--s-5);
+    color: var(--c-ink);
+    text-decoration: none;
+  }
+
+  .voisin:hover { color: var(--c-ink); }
+  .voisin--suivant { text-align: right; justify-items: end; }
+  .voisin__sens { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--c-accent); font: 600 0.8125rem/1.2 var(--font-ui); }
+  .voisin__titre { font: var(--t-headline); }
+  .voisin__titre [lang="ja"] { color: var(--c-ink-3); font-weight: 600; }
+
+  @media (max-width: 599px) {
+    .voisins { grid-template-columns: 1fr; }
+    .voisin--vide { display: none; }
+    .voisin--suivant { text-align: left; justify-items: start; }
+  }
+
+  /* ─── Sommaire ─── */
+  .sommaire { display: none; }
+
+  @media (min-width: 1280px) {
+    .sommaire { display: block; }
+  }
+
+  /* Rail collant ; la liste elle-même est stylée dans src/components/lecteur/ListeSommaire.astro. */
+  .sommaire__nav {
+    position: sticky;
+    top: var(--s-5);
+    max-height: calc(100dvh - 2 * var(--s-5));
+    margin-left: calc(-1 * var(--s-2));
+    padding: var(--s-1) var(--s-1) var(--s-4) 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+</style>

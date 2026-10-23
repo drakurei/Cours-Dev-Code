@@ -1,0 +1,157 @@
+---
+/**
+ * Pied du Mode Focus (visible seulement sous html[data-focus]) : points de progression cliquables
+ * (générés dans [data-focus-points]), compteur « 2 / 6 », aide, boutons Précédent / Suivant.
+ *   ≥ 760 px : points + compteur · aide · Précédent Suivant
+ *   < 760 px : points sur toute la largeur, puis Précédent · 2 / 6 · Suivant
+ */
+import IconeLecteur from './IconeLecteur.astro';
+---
+
+<div class="focus-pied" data-focus-pied>
+  <ol class="focus-points" role="list" aria-label="Étapes du cours" data-focus-points></ol>
+  <span class="focus-pied__compteur" data-focus-compteur aria-hidden="true"></span>
+
+  <p class="focus-pied__aide">
+    <span class="focus-pied__aide-clavier"><kbd>←</kbd> <kbd>→</kbd> pour changer d’étape</span>
+    <span class="focus-pied__aide-tactile">Balaie pour changer d’étape</span>
+  </p>
+
+  <button class="btn btn--secondaire focus-pied__bouton focus-pied__bouton--precedent" type="button" data-focus-precedent aria-keyshortcuts="ArrowLeft K">
+    <IconeLecteur nom="fleche-gauche" taille={18} />
+    Précédent
+  </button>
+  <button class="btn btn--primaire focus-pied__bouton focus-pied__bouton--suivant" type="button" data-focus-suivant aria-keyshortcuts="ArrowRight J">
+    Suivant
+    <IconeLecteur nom="fleche-droite" taille={18} />
+  </button>
+</div>
+
+<style>
+  .focus-pied {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: none;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "points compteur aide precedent suivant";
+    align-items: center;
+    gap: var(--s-3);
+    min-height: calc(var(--focus-pied-h) + var(--safe-bottom));
+    padding: var(--s-3) calc(var(--s-6) + var(--safe-right)) calc(var(--s-3) + var(--safe-bottom)) calc(var(--s-6) + var(--safe-left));
+    background: var(--c-bg);
+    transition: box-shadow var(--d-2) var(--ease-out);
+  }
+
+  :global(html[data-focus]) .focus-pied { display: grid; }
+  .focus-pied[data-defile] { box-shadow: 0 -1px 0 var(--c-line); }
+
+  /* ─── Points : pastille visible de 8 px, cible de 44 × 44 px ─── */
+  .focus-points {
+    grid-area: points;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin: 0 0 0 calc(-1 * var(--s-3));
+    padding: 0;
+  }
+
+  .focus-points :global(li) { display: flex; flex: none; width: var(--cible); }
+
+  .focus-points :global(.focus-point) {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: var(--cible);
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-full);
+    background: none;
+  }
+
+  .focus-points :global(.focus-point)::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-full);
+    background: var(--c-line-strong);
+    transition: width var(--d-3) var(--ease-out), background-color var(--d-2) var(--ease-out);
+  }
+
+  .focus-points :global(.focus-point[data-etat="passee"])::before { background: var(--c-ink-3); }
+  .focus-points :global(.focus-point[aria-current="step"])::before { width: 24px; background: var(--c-accent); }
+  .focus-points :global(.focus-point:hover)::before { background: var(--c-ink-2); }
+  .focus-points :global(.focus-point[aria-current="step"]:hover)::before { background: var(--c-accent); }
+  .focus-points :global(.focus-point:focus-visible) { outline-offset: -2px; }
+
+  /* Libellé de l'étape au survol et au clavier (souris et clavier seulement). */
+  @media (hover: hover) {
+    .focus-points :global(.focus-point)::after {
+      content: attr(data-titre);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      width: max-content;
+      max-width: 16rem;
+      padding: 6px 10px;
+      border-radius: var(--r-sm);
+      background: var(--c-ink);
+      color: var(--c-bg);
+      font: 500 0.8125rem/1.3 var(--font-ui);
+      text-align: left;
+      white-space: normal;
+      opacity: 0;
+      pointer-events: none;
+      translate: -50% 4px;
+      transition: opacity var(--d-2) var(--ease-out), translate var(--d-2) var(--ease-out);
+    }
+
+    .focus-points :global(.focus-point:hover)::after,
+    .focus-points :global(.focus-point:focus-visible)::after { opacity: 1; translate: -50% 0; }
+
+    /* Premiers points : l'infobulle part de la gauche pour ne pas sortir de l'écran. */
+    .focus-points :global(li:nth-child(-n + 2) .focus-point)::after { left: 0; translate: 0 4px; }
+    .focus-points :global(li:nth-child(-n + 2) .focus-point:hover)::after,
+    .focus-points :global(li:nth-child(-n + 2) .focus-point:focus-visible)::after { translate: 0 0; }
+  }
+
+  .focus-pied__compteur {
+    grid-area: compteur;
+    color: var(--c-ink-2);
+    font: 600 0.875rem/1 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .focus-pied__aide { grid-area: aide; color: var(--c-ink-3); font: var(--t-footnote); text-align: center; }
+  .focus-pied__aide kbd { font-size: 0.75rem; }
+  .focus-pied__aide-tactile { display: none; }
+
+  @media (hover: none) and (pointer: coarse) {
+    .focus-pied__aide-clavier { display: none; }
+    .focus-pied__aide-tactile { display: inline; }
+  }
+
+  .focus-pied__bouton { min-height: 48px; }
+  .focus-pied__bouton--precedent { grid-area: precedent; padding-inline: var(--s-4) var(--s-5); }
+  .focus-pied__bouton--suivant { grid-area: suivant; padding-inline: var(--s-5) var(--s-4); }
+
+  /* Fenêtre étroite : points sur toute la largeur, puis Précédent · 2 / 6 · Suivant. */
+  @media (max-width: 759px) {
+    .focus-pied {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      grid-template-areas:
+        "points points points"
+        "precedent compteur suivant";
+      gap: var(--s-1) var(--s-3);
+      padding-inline: calc(var(--s-4) + var(--safe-left)) calc(var(--s-4) + var(--safe-right));
+    }
+
+    .focus-points { justify-content: center; margin: 0; }
+    /* Beaucoup d'étapes : les cibles rétrécissent (32 px au moins) plutôt que de déborder. */
+    .focus-points :global(li) { flex: 0 1 var(--cible); width: auto; min-width: 32px; }
+    .focus-pied__aide { display: none; }
+    .focus-pied__bouton { padding-inline: var(--s-3); }
+  }
+</style>

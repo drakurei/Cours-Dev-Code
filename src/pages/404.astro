@@ -1,0 +1,47 @@
+---
+/**
+ * 404 — 迷子 maigo : « Perdu ? » + recherche + retour.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icone from '../components/Icone.astro';
+import { MOTS_JAPONAIS } from '../lib/kanji.ts';
+import { url } from '../lib/url.ts';
+---
+
+<BaseLayout titre="Page introuvable" description="Cette page n’existe pas (ou plus).">
+  <section class="perdu" aria-labelledby="perdu-titre">
+    <p class="perdu__kanji" lang="ja" aria-hidden="true" title="maigo — enfant perdu">{MOTS_JAPONAIS.perdu}</p>
+    <h1 class="perdu__titre" id="perdu-titre" data-grand-titre>Perdu ?</h1>
+    <p class="perdu__texte">Cette page n’existe pas, ou elle a changé d’adresse. Cherche-la ou repars de l’accueil.</p>
+    <div class="perdu__actions">
+      <button class="btn btn--primaire btn--grand" type="button" data-action="recherche">
+        <Icone nom="recherche" taille={20} />Rechercher
+      </button>
+      <a class="btn btn--secondaire btn--grand" href={url('/')}>
+        <Icone nom="maison" taille={20} />Retour à Aujourd’hui
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .perdu {
+    display: grid;
+    justify-items: center;
+    gap: var(--s-3);
+    padding: var(--s-9) 0 var(--s-8);
+    text-align: center;
+  }
+
+  .perdu__kanji {
+    color: var(--c-ink);
+    font: 700 clamp(4.5rem, 3rem + 8vw, 8rem) / 1 var(--font-kanji);
+    letter-spacing: 0.06em;
+    writing-mode: vertical-rl;
+    margin-bottom: var(--s-4);
+  }
+
+  .perdu__titre { font: var(--t-large); letter-spacing: var(--t-large-track); }
+  .perdu__texte { max-width: 42ch; color: var(--c-ink-2); font: var(--t-body); }
+  .perdu__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-3); margin-top: var(--s-4); }
+</style>

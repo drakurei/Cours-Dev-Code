@@ -1,0 +1,116 @@
+---
+/**
+ * Ligne d'épisode : 第N話 + « Chapitre N », titre, durée, statut.
+ * Statut posé côté client par src/scripts/progression.ts : data-statut="a-lire|en-cours|termine"
+ * (à lire : cercle vide ; en cours : petit ensō ; terminé : petit hanko 済).
+ */
+import type { CoursVue } from '../lib/cours.ts';
+import { NIVEAUX_LIBELLES } from '../lib/libelles.ts';
+import Enso from './Enso.astro';
+import Icone from './Icone.astro';
+
+interface Props {
+  cours: CoursVue;
+  /** Nombre de notions (##) du cours, pour l'ensō « en cours ». */
+  sections?: number;
+}
+
+const { cours, sections = 0 } = Astro.props;
+const n = cours.chapitre;
+---
+
+<li class="chapitre-ligne">
+  <a class="chapitre" href={cours.url} data-chapitre={cours.id} data-statut="a-lire">
+    <span class="chapitre__num">
+      <span class="chapitre__wa" lang="ja" aria-hidden="true">第{n}話</span>
+      <span class="chapitre__label">Chapitre {n}</span>
+    </span>
+    <span class="chapitre__corps">
+      <span class="chapitre__titre">{cours.data.titre}</span>
+      <span class="chapitre__meta">
+        {cours.duree} min · {NIVEAUX_LIBELLES[cours.data.niveau]}
+        {cours.estProjet && ' · Projet'}
+      </span>
+    </span>
+    <span class="chapitre__statut">
+      <span class="statut statut--a-lire"><span class="statut__rond" aria-hidden="true"></span><span class="statut__texte">À lire</span></span>
+      <span class="statut statut--en-cours">
+        <Enso taille={22} coursId={cours.id} sections={sections} libelle="Progression" encre={false} />
+        <span class="statut__texte">En cours</span>
+      </span>
+      <span class="statut statut--termine"><span class="statut__hanko" lang="ja" aria-hidden="true">済</span><span class="statut__texte">Terminé</span></span>
+    </span>
+    <Icone nom="chevron-droite" taille={18} class="chapitre__chevron" />
+  </a>
+</li>
+
+<style>
+  .chapitre-ligne { list-style: none; }
+
+  .chapitre {
+    display: grid;
+    grid-template-columns: 64px 1fr auto auto;
+    align-items: center;
+    gap: var(--s-4);
+    min-height: 68px;
+    padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4);
+    border-radius: var(--r-md);
+    color: var(--c-ink);
+    text-decoration: none;
+    transition: background-color var(--d-1) var(--ease-out);
+  }
+
+  .chapitre:hover { background: var(--c-bg-grouped); color: var(--c-ink); }
+  .chapitre:active { background: color-mix(in srgb, var(--c-bg-grouped) 70%, var(--c-line-strong)); }
+
+  .chapitre__num { display: grid; gap: 2px; justify-items: start; }
+
+  .chapitre__wa {
+    color: var(--c-ink);
+    font: 600 1.0625rem/1 var(--font-kanji);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .chapitre__label { color: var(--c-ink-3); font: var(--t-caption); }
+
+  .chapitre__corps { display: grid; gap: 2px; min-width: 0; }
+  .chapitre__titre { font: var(--t-headline); letter-spacing: var(--t-headline-track); }
+  .chapitre__meta { color: var(--c-ink-3); font: var(--t-footnote); }
+
+  .chapitre__statut { display: flex; align-items: center; }
+  .statut { display: none; align-items: center; gap: var(--s-2); color: var(--c-ink-3); font: var(--t-footnote); }
+  .chapitre[data-statut="a-lire"] .statut--a-lire,
+  .chapitre[data-statut="en-cours"] .statut--en-cours,
+  .chapitre[data-statut="termine"] .statut--termine { display: inline-flex; }
+
+  .statut__rond {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px var(--c-line-strong);
+  }
+
+  .statut__hanko {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1.5px var(--c-hanko);
+    color: var(--c-hanko);
+    font: 700 14px/1 var(--font-kanji);
+    rotate: -8deg;
+  }
+
+  .statut--termine { color: var(--c-hanko); }
+
+  :global(.chapitre__chevron) { color: var(--c-ink-3); }
+
+  @media (max-width: 599px) {
+    .chapitre { grid-template-columns: 52px 1fr auto; gap: var(--s-3); padding-left: var(--s-3); }
+    .chapitre__wa { font-size: 0.9375rem; }
+    .statut__texte { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    :global(.chapitre__chevron) { display: none; }
+  }
+</style>

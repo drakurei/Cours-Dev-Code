@@ -1,0 +1,190 @@
+---
+/**
+ * Couverture de tome manga (une matière) : ratio 2:3, bande de couleur au dos, grand kanji,
+ * « 巻 N » écrit verticalement, trame de points (screentone), barre de progression.
+ * Progression mise à jour par src/scripts/progression.ts via data-tome-ids (--progression 0..1).
+ * Au survol, la couverture pivote un peu sur son dos, comme un livre qu'on ouvre.
+ */
+import type { MatiereVue } from '../lib/matieres.ts';
+import { urlTome } from '../lib/url.ts';
+import { pluriel } from '../lib/texte.ts';
+
+interface Props {
+  matiere: MatiereVue;
+  /** Ids des cours publiés du tome (progression). */
+  ids: string[];
+  /** Lien (défaut : la page du tome). `null` = couverture seule, sans lien. */
+  href?: string | null;
+  taille?: 'normale' | 'petite' | 'grande';
+  class?: string;
+}
+
+const { matiere, ids, href, taille = 'normale', class: classe } = Astro.props;
+const lien = href === null ? null : (href ?? urlTome(matiere.slug));
+const Balise = lien ? 'a' : 'div';
+const nb = ids.length;
+const numero = matiere.ordre < 999 ? matiere.ordre : null;
+---
+
+<Balise
+  class:list={['tome', `tome--${taille}`, classe]}
+  href={lien ?? undefined}
+  data-couleur={matiere.couleur}
+  data-tome={matiere.slug}
+  data-tome-ids={ids.join(' ')}
+  style="--progression: 0"
+>
+  <span class="tome__bande" aria-hidden="true"></span>
+  <span class="tome__trame" aria-hidden="true"></span>
+  {
+    numero !== null && (
+      <span class="tome__numero" aria-hidden="true">
+        <span class="tome__maki" lang="ja">巻</span>
+        <span class="tome__chiffre">{numero}</span>
+      </span>
+    )
+  }
+  <span class="tome__kanji" lang="ja" aria-hidden="true" title={matiere.lecture}>{matiere.kanji}</span>
+  <span class="tome__bas">
+    <span class="tome__nom">
+      {numero !== null && <span class="sr-only">Tome {numero} : </span>}
+      {matiere.nom}
+    </span>
+    <span class="tome__meta">
+      {nb ? pluriel(nb, 'épisode') : 'Bientôt'}
+      {nb > 0 && <span class="tome__compte"> · <span data-progression-texte>0/{nb}</span><span class="sr-only"> terminés</span></span>}
+    </span>
+    <span class="tome__barre" aria-hidden="true"><span></span></span>
+  </span>
+</Balise>
+
+<style>
+  .tome {
+    --largeur: 176px;
+    position: relative;
+    display: block;
+    flex: none;
+    width: var(--largeur);
+    aspect-ratio: 2 / 3;
+    border-radius: 6px var(--r-md) var(--r-md) 6px;
+    background: var(--c-surface);
+    color: var(--c-ink);
+    text-decoration: none;
+    box-shadow:
+      var(--sh-2),
+      inset 0 0 0 1px var(--c-line);
+    overflow: hidden;
+    isolation: isolate;
+    transform-origin: left center;
+    transition:
+      transform var(--d-3) var(--ease-out),
+      box-shadow var(--d-3) var(--ease-out);
+  }
+
+  .tome--petite { --largeur: 132px; }
+  .tome--grande { --largeur: min(240px, 60vw); }
+
+  a.tome:hover {
+    color: var(--c-ink);
+    transform: perspective(900px) rotateY(-9deg) translateX(2px);
+    box-shadow:
+      var(--sh-3),
+      inset 0 0 0 1px var(--c-line);
+  }
+
+  a.tome:active { transform: perspective(900px) rotateY(-4deg) scale(0.985); }
+  a.tome:focus-visible { outline-offset: 4px; border-radius: 6px var(--r-md) var(--r-md) 6px; }
+
+  /* Dos du livre : bande de couleur + pli. */
+  .tome__bande {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 12px;
+    background: var(--couleur);
+    box-shadow: inset -1px 0 0 rgb(0 0 0 / 0.12), 2px 0 6px rgb(0 0 0 / 0.06);
+  }
+
+  /* Trame de points (screentone) qui s'efface vers le bas. */
+  .tome__trame {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(circle at center, var(--couleur) 0.9px, transparent 1.3px);
+    background-size: 7px 7px;
+    opacity: 0.16;
+    -webkit-mask-image: linear-gradient(160deg, #000 0%, transparent 62%);
+    mask-image: linear-gradient(160deg, #000 0%, transparent 62%);
+  }
+
+  /* « 巻 N » écrit verticalement, chiffres debout (tate-chū-yoko). */
+  .tome__numero {
+    position: absolute;
+    top: 12px;
+    right: 10px;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--couleur-ink);
+    font: 600 0.8125rem/1 var(--font-kanji);
+    letter-spacing: 0.08em;
+  }
+
+  .tome__chiffre {
+    text-combine-upright: all;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tome__kanji {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    translate: calc(-50% + 6px) 0;
+    color: var(--couleur);
+    font: 700 calc(var(--largeur) * 0.46) / 1 var(--font-kanji);
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+
+  :global([data-theme="dark"]) .tome__kanji { text-shadow: none; }
+
+  .tome__bas {
+    position: absolute;
+    inset: auto 0 0 12px;
+    display: grid;
+    gap: 2px;
+    padding: 0 var(--s-3) var(--s-3);
+  }
+
+  .tome__nom {
+    font: 650 calc(var(--largeur) * 0.088) / 1.2 var(--font-ui);
+    letter-spacing: -0.012em;
+    overflow-wrap: anywhere;
+  }
+
+  .tome__meta {
+    color: var(--c-ink-3);
+    font: 500 0.75rem/1.3 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tome__barre {
+    display: block;
+    height: 3px;
+    margin-top: var(--s-2);
+    border-radius: var(--r-full);
+    background: var(--c-line);
+    overflow: hidden;
+  }
+
+  .tome__barre > span {
+    display: block;
+    height: 100%;
+    width: calc(var(--progression) * 100%);
+    border-radius: inherit;
+    background: var(--couleur);
+    transition: width var(--d-4) var(--ease-out);
+  }
+</style>

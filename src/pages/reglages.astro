@@ -1,0 +1,67 @@
+---
+/**
+ * /reglages/ — réglages groupés façon iOS (CONCEPTION §8).
+ * L'îlot React (client:only) se monte dans <div id="reglages-app"> ; en attendant,
+ * un squelette léger garde la place (pas de saut de mise en page).
+ * Ancres : #apparence, #revision, #minuteur, #voix, #synchronisation, #ia, #donnees, #a-propos.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import Reglages from '../islands/reglages/Reglages.tsx';
+import { KANJI_NAVIGATION } from '../lib/kanji.ts';
+import paquet from '../../package.json';
+
+const nav = KANJI_NAVIGATION.reglages;
+const version: string = paquet.version;
+---
+
+<BaseLayout titre={nav.libelle} description="Réglages de Manabi : apparence, révision, voix, synchronisation et données." pageActive="reglages">
+  <EnTeteSection
+    niveau={1}
+    kanji={nav.kanji}
+    lecture={nav.lecture}
+    titre={nav.libelle}
+    sousTitre="Tout reste dans ce navigateur, sauf ce que tu choisis de synchroniser."
+  />
+  <div id="reglages-app" class="zone-app">
+    <Reglages client:only="react" version={version}>
+      <div slot="fallback" class="squelette" aria-hidden="true">
+        <span class="squelette__titre"></span>
+        <span class="squelette__liste"></span>
+        <span class="squelette__titre"></span>
+        <span class="squelette__liste squelette__liste--courte"></span>
+      </div>
+    </Reglages>
+    <noscript><p class="t-subhead t-secondaire">Cette page a besoin de JavaScript.</p></noscript>
+  </div>
+</BaseLayout>
+
+<style>
+  .zone-app { min-height: 40vh; }
+
+  .squelette {
+    display: grid;
+    gap: var(--s-4);
+    max-width: 720px;
+  }
+
+  .squelette > span {
+    display: block;
+    border-radius: var(--r-lg);
+  }
+
+  .squelette__titre {
+    width: 9rem;
+    height: 1.75rem;
+    margin-top: var(--s-4);
+    background: var(--c-bg-grouped);
+  }
+
+  .squelette__liste {
+    height: 22rem;
+    background: var(--c-surface);
+    box-shadow: inset 0 0 0 1px var(--c-line);
+  }
+
+  .squelette__liste--courte { height: 10rem; }
+</style>

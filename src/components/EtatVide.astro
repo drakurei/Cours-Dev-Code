@@ -1,0 +1,61 @@
+---
+/**
+ * État vide : un kanji, une phrase qui dit quoi faire, une action (slot).
+ * Fond seigaiha 青海波 (vagues) très pâle.
+ */
+interface Props {
+  kanji: string;
+  titre: string;
+  texte?: string | undefined;
+  class?: string;
+}
+
+const { kanji, titre, texte, class: classe } = Astro.props;
+---
+
+<div class:list={['etat-vide', classe]}>
+  <span class="etat-vide__kanji" lang="ja" aria-hidden="true">{kanji}</span>
+  <p class="etat-vide__titre">{titre}</p>
+  {texte && <p class="etat-vide__texte">{texte}</p>}
+  {Astro.slots.has('default') && <div class="etat-vide__actions"><slot /></div>}
+</div>
+
+<style>
+  .etat-vide {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: var(--s-2);
+    padding: var(--s-8) var(--s-5);
+    border-radius: var(--r-lg);
+    background-color: var(--c-surface-2);
+    box-shadow: inset 0 0 0 1px var(--c-line);
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* Seigaiha : demi-cercles concentriques en écailles, opacité ≤ .05. */
+  .etat-vide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.05;
+    color: var(--c-ink);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cg fill='none' stroke='black' stroke-width='1.2'%3E%3Cpath d='M0 24a24 24 0 0 1 48 0M6 24a18 18 0 0 1 36 0M12 24a12 12 0 0 1 24 0M18 24a6 6 0 0 1 12 0'/%3E%3Cpath d='M-24 12a24 24 0 0 1 48 0M-18 12a18 18 0 0 1 36 0M-12 12a12 12 0 0 1 24 0M-6 12a6 6 0 0 1 12 0' transform='translate(0 0)'/%3E%3Cpath d='M24 12a24 24 0 0 1 48 0M30 12a18 18 0 0 1 36 0M36 12a12 12 0 0 1 24 0M42 12a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 48px 24px;
+  }
+
+  :global([data-theme="dark"]) .etat-vide::before { filter: invert(1); opacity: 0.06; }
+
+  .etat-vide__kanji {
+    font: 700 3rem/1 var(--font-kanji);
+    color: var(--c-ink-3);
+    margin-bottom: var(--s-2);
+  }
+
+  .etat-vide__titre { font: var(--t-headline); color: var(--c-ink); }
+  .etat-vide__texte { font: var(--t-subhead); color: var(--c-ink-2); max-width: 44ch; }
+  .etat-vide__actions { margin-top: var(--s-3); display: flex; gap: var(--s-2); flex-wrap: wrap; justify-content: center; }
+</style>

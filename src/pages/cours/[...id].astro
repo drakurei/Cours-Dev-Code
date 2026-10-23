@@ -1,0 +1,49 @@
+---
+/**
+ * Page d'un cours : /cours/<matiere>/<NN-slug>/
+ * Les îlots interactifs (quiz, flashcards, exercices) se branchent ici via les slots du CoursLayout,
+ * ex. <Quiz slot="quiz" client:visible coursId={donnees.coursId} questions={donnees.quiz} />.
+ */
+import { render, type CollectionEntry } from 'astro:content';
+import CoursLayout from '../../layouts/CoursLayout.astro';
+import { coursPublies, precedentSuivant, sectionsDuCours, type CoursVue } from '../../lib/cours.ts';
+import { preparerDonneesCours } from '../../lib/donnees-cours.ts';
+import BlocExercices from '../../islands/apprentissage/BlocExercices.astro';
+import BlocQuiz from '../../islands/apprentissage/BlocQuiz.astro';
+import BlocFlashcards from '../../islands/apprentissage/BlocFlashcards.astro';
+
+export async function getStaticPaths() {
+  const liste = await coursPublies();
+  return liste.map((cours) => ({
+    params: { id: cours.id },
+    props: { cours, voisins: precedentSuivant(cours.id, liste) },
+  }));
+}
+
+interface Props {
+  cours: CoursVue<CollectionEntry<'cours'>>;
+  voisins: ReturnType<typeof precedentSuivant>;
+}
+
+const { cours, voisins } = Astro.props;
+const { Content, headings } = await render(cours.entree);
+const sections = sectionsDuCours(headings);
+const donnees = await preparerDonneesCours(cours.id, cours.data);
+---
+
+<CoursLayout cours={cours} sections={sections} voisins={voisins} donnees={donnees}>
+  <Content />
+  {/* Îlots d'apprentissage (src/islands/apprentissage) ; chaque bloc garde une version statique dans <noscript>. */}
+  {donnees.exercices.length > 0 && <BlocExercices slot="exercices" exercices={donnees.exercices} />}
+  {
+    donnees.quiz.length > 0 && (
+      <BlocQuiz
+        slot="quiz"
+        coursId={cours.id}
+        questions={donnees.quiz}
+        suite={donnees.flashcards.length ? { href: '#flashcards', libelle: 'Passer aux flashcards' } : undefined}
+      />
+    )
+  }
+  {donnees.flashcards.length > 0 && <BlocFlashcards slot="flashcards" coursId={cours.id} cartes={donnees.flashcards} />}
+</CoursLayout>

@@ -1,0 +1,55 @@
+---
+/**
+ * Quiz d'un cours : l'îlot React (une question à la fois), hydraté un peu avant d'être visible.
+ * Sans JavaScript : la liste statique des questions, réponse dans un dépliant.
+ */
+import Quiz from './Quiz.tsx';
+import type { QuestionRendue } from '../../lib/donnees-cours.ts';
+import { lettre } from '../../lib/apprentissage/quiz.ts';
+
+interface Props {
+  coursId: string;
+  questions: QuestionRendue[];
+  /** Proposé après un sans-faute (ex. « Passer aux flashcards »). */
+  suite?: { href: string; libelle: string } | undefined;
+}
+
+const { coursId, questions, suite } = Astro.props;
+// Seulement ce dont l'îlot a besoin (moins de données sérialisées dans la page).
+const jeu = questions
+  .filter((q) => q.reponseIndex >= 0)
+  .map(({ index, questionHtml, choix, reponseIndex, explicationHtml }) => ({ index, questionHtml, choix, reponseIndex, explicationHtml }));
+---
+
+<div class="ap-ilot">
+  <Quiz client:visible={{ rootMargin: '400px' }} coursId={coursId} questions={jeu} suite={suite} />
+  <noscript>
+    <style>.ap-ilot > astro-island { display: none !important; }</style>
+    <ol class="ap-repli" role="list">
+      {
+        questions.map((q) => (
+          <li class="carte ap-repli__item">
+            <p class="ap-repli__num">Question {q.index + 1}</p>
+            <p class="ap-repli__question" set:html={q.questionHtml} />
+            <ol class="ap-repli__choix" role="list">
+              {q.choix.map((c, i) => (
+                <li>
+                  <strong>{lettre(i)}.</strong> <span set:html={c.html} />
+                </li>
+              ))}
+            </ol>
+            <details class="aide">
+              <summary>Voir la réponse</summary>
+              <div class="aide__corps">
+                <p>
+                  <strong>{lettre(q.reponseIndex)}.</strong> <span set:html={q.choix[q.reponseIndex]?.html ?? ''} />
+                </p>
+                {q.explicationHtml && <Fragment set:html={q.explicationHtml} />}
+              </div>
+            </details>
+          </li>
+        ))
+      }
+    </ol>
+  </noscript>
+</div>

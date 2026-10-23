@@ -1,0 +1,12 @@
+# Texte : fins de ligne LF partout (PC perso, PC pro, Codespaces), quel que soit core.autocrlf.
+* text=auto eol=lf
+
+# Binaires : jamais convertis, jamais fusionnés ligne par ligne.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.pdf   binary
+*.woff2 binary
+*.ico   binary

@@ -1,0 +1,63 @@
+---
+/**
+ * /reviser/ — l'îlot interactif se monte dans <div id="reviser-app"> (client:only="react") :
+ * onglets Cartes (FSRS du jour), Quiz éclair, Par tome. Données : /donnees/cartes.json et /donnees/quiz.json.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import Reviser from '../islands/reviser/Reviser.tsx';
+import { KANJI_NAVIGATION } from '../lib/kanji.ts';
+import { tomesPublies } from '../lib/cours.ts';
+
+const nav = KANJI_NAVIGATION.reviser;
+const tomes = await tomesPublies();
+const listeTomes = tomes.map((t) => ({
+  slug: t.matiere.slug,
+  nom: t.matiere.nom,
+  kanji: t.matiere.kanji,
+  lecture: t.matiere.lecture,
+  couleur: t.matiere.couleur,
+}));
+const listeCours = tomes.flatMap((t) => t.cours.map((c) => ({ id: c.id, titre: c.data.titre, url: c.url })));
+---
+
+<BaseLayout titre={nav.libelle} description="Révisions : flashcards FSRS, quiz éclair, révision par tome." pageActive="reviser">
+  <EnTeteSection niveau={1} kanji={nav.kanji} lecture={nav.lecture} titre={nav.libelle} class="reviser-tete" />
+  <div id="reviser-app" class="zone-app">
+    <Reviser client:only="react" tomes={listeTomes} cours={listeCours}>
+      <div slot="fallback" class="reviser-attente" aria-hidden="true">
+        <div class="reviser-attente__onglets"></div>
+        <div class="reviser-attente__carte"></div>
+      </div>
+    </Reviser>
+    <noscript><p class="t-subhead t-secondaire">Cette page a besoin de JavaScript.</p></noscript>
+  </div>
+</BaseLayout>
+
+<style>
+  .zone-app { min-height: 40vh; }
+
+  /* Sur grand écran, le titre s'aligne sur la scène centrée de l'îlot. */
+  @media (min-width: 1024px) {
+    :global(.reviser-tete) { max-width: 640px; margin-inline: auto; }
+  }
+
+  /* Attente du chargement de l'îlot : mêmes volumes, aucun saut. */
+  .reviser-attente { display: grid; gap: var(--s-5); max-width: 640px; margin-inline: auto; }
+
+  .reviser-attente__onglets {
+    width: 100%;
+    max-width: 460px;
+    height: 50px;
+    justify-self: center;
+    border-radius: var(--r-full);
+    background: var(--c-bg-grouped);
+  }
+
+  .reviser-attente__carte {
+    height: clamp(300px, 48vh, 420px);
+    border-radius: var(--r-xl);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  }
+</style>

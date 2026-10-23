@@ -1,0 +1,65 @@
+---
+/**
+ * En-tête : kanji + titre (+ sous-titre, + actions à droite via le slot « actions »).
+ * niveau 1 = grand titre de page (façon iOS, se réduit dans la barre du haut au défilement).
+ */
+import Kanji from './Kanji.astro';
+import type { Couleur } from '../lib/schema.ts';
+
+interface Props {
+  titre: string;
+  kanji?: string | undefined;
+  lecture?: string | undefined;
+  sousTitre?: string | undefined;
+  niveau?: 1 | 2 | 3;
+  id?: string | undefined;
+  couleur?: Couleur | undefined;
+  class?: string;
+}
+
+const { titre, kanji, lecture, sousTitre, niveau = 2, id, couleur, class: classe } = Astro.props;
+const Titre = `h${niveau}` as 'h1' | 'h2' | 'h3';
+const tailleKanji = niveau === 1 ? 'lg' : niveau === 2 ? 'md' : 'sm';
+---
+
+<header class:list={['en-tete', `en-tete--n${niveau}`, classe]}>
+  <div class="en-tete__ligne">
+    {kanji && <Kanji kanji={kanji} lecture={lecture} taille={tailleKanji} couleur={couleur} />}
+    <Titre class="en-tete__titre" id={id} data-grand-titre={niveau === 1 ? '' : undefined}>{titre}</Titre>
+    {Astro.slots.has('actions') && <div class="en-tete__actions"><slot name="actions" /></div>}
+  </div>
+  {sousTitre && <p class="en-tete__sous-titre">{sousTitre}</p>}
+  <slot />
+</header>
+
+<style>
+  .en-tete { display: grid; gap: var(--s-2); }
+
+  .en-tete__ligne {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .en-tete__titre { min-width: 0; color: var(--c-ink); }
+
+  .en-tete__actions { margin-left: auto; display: flex; gap: var(--s-2); align-items: center; }
+
+  .en-tete--n1 { margin-bottom: var(--s-6); }
+  .en-tete--n1 .en-tete__ligne { gap: var(--s-4); }
+  .en-tete--n1 .en-tete__titre { font: var(--t-large); letter-spacing: var(--t-large-track); }
+  .en-tete--n1 .en-tete__sous-titre { font: var(--t-body); color: var(--c-ink-2); max-width: 60ch; }
+
+  .en-tete--n2 { margin-bottom: var(--s-4); }
+  .en-tete--n2 .en-tete__titre { font: var(--t-title2); letter-spacing: var(--t-title2-track); }
+  .en-tete--n2 .en-tete__sous-titre { font: var(--t-subhead); color: var(--c-ink-2); }
+
+  .en-tete--n3 { margin-bottom: var(--s-3); }
+  .en-tete--n3 .en-tete__titre { font: var(--t-headline); letter-spacing: var(--t-headline-track); }
+  .en-tete--n3 .en-tete__sous-titre { font: var(--t-footnote); color: var(--c-ink-3); }
+
+  @media (max-width: 599px) {
+    .en-tete--n1 .en-tete__titre { font: var(--t-title1); letter-spacing: var(--t-title1-track); }
+  }
+</style>

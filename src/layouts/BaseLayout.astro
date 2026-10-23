@@ -1,0 +1,270 @@
+---
+/**
+ * Squelette de toutes les pages : <head> (meta, PWA, polices, anti-flash), lien d'évitement,
+ * barre latérale (≥ 1024 px) ou barre du haut + onglets (< 1024 px), <main id="contenu">,
+ * et les éléments globaux : palette de commandes, minuteur (carte de la barre latérale ;
+ * pastille flottante sur mobile), pétales, éclat de pétales, service worker et toast de mise à jour,
+ * synchro Gist automatique (src/lib/sync.ts).
+ */
+import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/atkinson-hyperlegible-next/wght-italic.css';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/jetbrains-mono/wght-italic.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/prose.css';
+import '../styles/blocs.css';
+import atkinsonLatin from '@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2?url';
+
+import Sidebar from '../components/Sidebar.astro';
+import TopBar from '../components/TopBar.astro';
+import TabBar from '../components/TabBar.astro';
+import Petales from '../components/Petales.astro';
+import Icone from '../components/Icone.astro';
+import CommandPalette from '../islands/CommandPalette.tsx';
+import Minuteur from '../islands/Minuteur.tsx';
+import { KANJI_NAVIGATION, PAGES_NAV, urlPoliceKanji, type PageNav } from '../lib/kanji.ts';
+import { toutesLesMatieres } from '../lib/matieres.ts';
+import { url } from '../lib/url.ts';
+
+interface Props {
+  /** Titre de la page (onglet du navigateur, barre du haut). */
+  titre: string;
+  description?: string;
+  /** Entrée de navigation à mettre en avant. */
+  pageActive?: PageNav | null;
+  /** Pétales qui tombent (accueil). */
+  petales?: boolean;
+  /** Précharge la police de lecture (pages de cours). */
+  lecture?: boolean;
+  /** Largeur du contenu : normale (1120 px) ou lecture (cours + sommaire). */
+  largeur?: 'normale' | 'large';
+  /** Page à ne pas indexer (ex. hors-ligne). */
+  noindex?: boolean;
+}
+
+const {
+  titre,
+  description = 'Manabi 学び — mes cours et projets de développement en fiches courtes, exercices, quiz et flashcards.',
+  pageActive = null,
+  petales = false,
+  lecture = false,
+  largeur = 'normale',
+  noindex = false,
+} = Astro.props;
+
+const titreComplet = pageActive === 'aujourdhui' ? 'Manabi 学び' : `${titre} · Manabi`;
+const canonique = new URL(Astro.url.pathname, Astro.site);
+
+// Police des kanji : seulement les caractères utilisés (interface + matières).
+const matieres = await toutesLesMatieres();
+const policeKanji = urlPoliceKanji(matieres.map((m) => m.kanji));
+
+// Pages proposées par la palette de commandes (version minimale).
+const pagesPalette = PAGES_NAV.map((cle) => ({
+  titre: KANJI_NAVIGATION[cle].libelle,
+  url: url(KANJI_NAVIGATION[cle].chemin),
+  kanji: KANJI_NAVIGATION[cle].kanji,
+}));
+---
+
+<!doctype html>
+<html lang="fr" data-theme="light" data-theme-choix="auto" data-font="atkinson" data-motion="auto" data-petales="oui">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{titreComplet}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonique} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <!-- Anti-flash : applique les préférences AVANT le premier rendu (à garder en phase avec src/scripts/prefs.ts). -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement, p = {};
+        try { p = (JSON.parse(localStorage.getItem('manabi:v1') || '{}') || {}).prefs || {}; } catch (e) {}
+        var t = p.theme === 'clair' || p.theme === 'sombre' ? p.theme : 'auto';
+        var sombre = t === 'sombre' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        d.setAttribute('data-theme', sombre ? 'dark' : 'light');
+        d.setAttribute('data-theme-choix', t);
+        d.setAttribute('data-font', p.police === 'systeme' ? 'systeme' : 'atkinson');
+        d.setAttribute('data-motion', p.animations === 'reduites' ? 'reduit' : 'auto');
+        d.setAttribute('data-petales', p.petales === false ? 'non' : 'oui');
+        var s = Number(p.taille);
+        if (s >= 0.9 && s <= 1.4) d.style.setProperty('--user-scale', String(s));
+      })();
+    </script>
+
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121114" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-title" content="Manabi" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href={url('/manifest.webmanifest')} />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <link rel="icon" href={url('/icons/icon-192.png')} type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href={url('/icons/apple-touch-icon.png')} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={titreComplet} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="fr_FR" />
+
+    {lecture && <link rel="preload" href={atkinsonLatin} as="font" type="font/woff2" crossorigin />}
+
+    <!-- Shippori Mincho (kanji) : quelques Ko grâce à text=, chargée sans bloquer le rendu.
+         crossorigin : réponse CORS (et non opaque), que le service worker peut garder hors-ligne. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href={policeKanji} media="print" onload="this.media='all'" crossorigin />
+    <noscript><link rel="stylesheet" href={policeKanji} crossorigin /></noscript>
+  </head>
+  <body>
+    <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+    <div class="app">
+      <Sidebar pageActive={pageActive} />
+      <div class="app__colonne">
+        <TopBar titre={titre} />
+        <main id="contenu" class:list={['app__contenu', `app__contenu--${largeur}`]} tabindex="-1">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <TabBar pageActive={pageActive} />
+    <CommandPalette client:idle pages={pagesPalette} />
+    <Minuteur client:idle variante="pastille" />
+    {petales && <Petales />}
+
+    <!-- Mise à jour du site (src/scripts/sw.ts) : caché tant qu'aucune nouvelle version n'attend. -->
+    <div class="maj verre" role="region" aria-label="Mise à jour" data-maj hidden>
+      <span class="maj__kanji" lang="ja" aria-hidden="true">新</span>
+      <p class="maj__texte">Nouvelle version disponible</p>
+      <button class="btn btn--primaire maj__recharger" type="button" data-maj-recharger>Recharger</button>
+      <button class="btn btn--icone maj__fermer" type="button" aria-label="Plus tard" title="Plus tard" data-maj-fermer>
+        <Icone nom="fermer" taille={18} />
+      </button>
+    </div>
+
+    <!-- Annonces polies pour les lecteurs d'écran (actions sans changement de page). -->
+    <p class="sr-only" aria-live="polite" data-annonce></p>
+    <p class="sr-only" aria-live="polite" data-annonce-petales></p>
+    <p class="sr-only" role="status" data-maj-annonce></p>
+
+    <script>
+      import '../scripts/prefs.ts';
+      import '../scripts/progression.ts';
+      import '../scripts/code.ts';
+      import '../scripts/ecouter.ts';
+      import '../scripts/eclat-petales.ts';
+      import '../scripts/sw.ts';
+      import { demarrerSynchroAuto } from '../lib/sync.ts';
+
+      // Synchro Gist automatique (si activée dans les Réglages et qu'un jeton existe) ; un 2e appel est sans effet.
+      demarrerSynchroAuto();
+    </script>
+  </body>
+</html>
+
+<style>
+  .app {
+    position: relative;
+    z-index: 1;
+    min-height: 100dvh;
+  }
+
+  .app__colonne { min-width: 0; }
+
+  .app__contenu {
+    width: 100%;
+    max-width: calc(var(--contenu-max) + 2 * var(--gouttiere));
+    margin-inline: auto;
+    padding:
+      var(--s-5)
+      calc(var(--gouttiere) + var(--safe-right))
+      calc(var(--tabbar-h) + var(--safe-bottom) + var(--s-7))
+      calc(var(--gouttiere) + var(--safe-left));
+  }
+
+  .app__contenu:focus { outline: none; }
+
+  @media (min-width: 1024px) {
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    }
+
+    .app__contenu {
+      padding: var(--s-7) var(--gouttiere) var(--s-9);
+    }
+
+    .app__contenu--large {
+      max-width: calc(var(--contenu-max) + var(--toc-w) + 2 * var(--gouttiere));
+    }
+  }
+
+  /* ─── Toast « Nouvelle version disponible » ─── */
+  .maj {
+    position: fixed;
+    top: calc(var(--topbar-h) + var(--safe-top) + var(--s-2));
+    left: 50%;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    width: max-content;
+    max-width: calc(100vw - 2 * var(--s-4));
+    padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+    border-radius: var(--r-full);
+    color: var(--c-ink);
+    box-shadow: var(--sh-3), inset 0 0 0 1px var(--c-line);
+    transform: translateX(-50%);
+    animation: maj-entree var(--d-3) var(--ease-out);
+  }
+
+  .maj__kanji {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-full);
+    background: var(--c-accent-soft);
+    color: var(--c-accent-ink);
+    font: 700 1rem/1 var(--font-kanji);
+  }
+
+  .maj__texte {
+    min-width: 0;
+    font: 600 0.9375rem/1.3 var(--font-ui);
+  }
+
+  .maj__recharger { flex: none; padding-inline: var(--s-4); }
+  .maj__fermer { flex: none; --btn-bg: transparent; --btn-ink: var(--c-ink-3); }
+  .maj__fermer:hover { --btn-bg: color-mix(in srgb, var(--c-ink) 7%, transparent); --btn-ink: var(--c-ink); }
+
+  @keyframes maj-entree {
+    from { opacity: 0; transform: translate(-50%, -8px); }
+  }
+
+  @media (max-width: 420px) {
+    .maj__kanji { display: none; }
+  }
+
+  @media (min-width: 1024px) {
+    .maj {
+      top: auto;
+      right: calc(var(--s-5) + var(--safe-right));
+      bottom: calc(var(--s-5) + var(--safe-bottom));
+      left: auto;
+      transform: none;
+      animation-name: maj-entree-bureau;
+    }
+
+    @keyframes maj-entree-bureau {
+      from { opacity: 0; transform: translateY(8px); }
+    }
+  }
+</style>

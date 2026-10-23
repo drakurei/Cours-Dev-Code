@@ -1,0 +1,26 @@
+/**
+ * Icônes fonctionnelles (contenu SVG 24×24, trait 1,75 façon SF Symbols), partagées par
+ * le composant Astro <Icone> et les îlots React (<IconeSvg nom="…" />).
+ */
+export const ICONES = {
+  recherche: '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 4.5 4.5"/>',
+  'chevron-droite': '<path d="m9.5 6 6 6-6 6"/>',
+  'chevron-gauche': '<path d="m14.5 6-6 6 6 6"/>',
+  'fleche-droite': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  externe: '<path d="M14 5h5v5M19 5l-8 8"/><path d="M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/>',
+  copier: '<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+  coche: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  horloge: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
+  plus: '<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>',
+  fermer: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  lecture: '<path d="M8 5.5v13l10-6.5z"/>',
+  pause: '<path d="M9 6v12M15 6v12"/>',
+  code: '<path d="m9 8-4 4 4 4M15 8l4 4-4 4"/>',
+  ecran: '<rect x="3.5" y="5" width="17" height="11.5" rx="2"/><path d="M9 19.5h6"/>',
+  'haut-parleur': '<path d="M5 9.5v5h3l4.5 3.5v-12L8 9.5z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>',
+  document: '<path d="M7 3.5h6.5L18 8v11.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/><path d="M13 3.5V8.5h5"/>',
+  image: '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m20 16-4.5-4.5L7 19"/>',
+  maison: '<path d="M4.5 10.5 12 4.5l7.5 6V19a1 1 0 0 1-1 1h-4v-5.5h-5V20h-4a1 1 0 0 1-1-1z"/>',
+} as const;
+
+export type NomIcone = keyof typeof ICONES;

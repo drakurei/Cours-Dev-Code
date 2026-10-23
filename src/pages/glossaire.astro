@@ -1,0 +1,532 @@
+---
+/**
+ * /glossaire/ — toutes les définitions de tous les cours, de A à Z.
+ * Un même terme défini dans plusieurs cours = UNE entrée (ses définitions + les puces de tomes).
+ * Rendu statique complet ; le filtre (texte, tome) n'est qu'une amélioration : src/islands/glossaire/filtre.ts.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import EtatVide from '../components/EtatVide.astro';
+import Icone from '../components/Icone.astro';
+import { coursPublies } from '../lib/cours.ts';
+import { preparerDonneesCours } from '../lib/donnees-cours.ts';
+import { KANJI_NAVIGATION } from '../lib/kanji.ts';
+import type { MatiereVue } from '../lib/matieres.ts';
+import { rendreEnLigne } from '../lib/markdown/rendu-serveur.ts';
+import { ancreLettre, ancreTerme, lettresPresentes, regrouperTermes } from '../lib/recherche/glossaire.ts';
+import { normaliser } from '../lib/recherche/normaliser.ts';
+import { markdownVersTexte } from '../lib/recherche/documents.ts';
+import { pluriel } from '../lib/texte.ts';
+import { url } from '../lib/url.ts';
+
+const liste = (await coursPublies()).filter((c) => c.data.definitions.length > 0);
+const donnees = await Promise.all(liste.map((c) => preparerDonneesCours(c.id, c.data)));
+
+// Une définition = une source, avec son HTML déjà rendu (même pipeline que les cours).
+const sources = liste.flatMap((c, k) =>
+  c.data.definitions.map((d, i) => {
+    const rendu = donnees[k]?.definitions[i];
+    return {
+      terme: d.terme,
+      matiere: c.matiere.slug,
+      ordreMatiere: c.matiere.ordre,
+      chapitre: c.chapitre,
+      vue: c.matiere,
+      coursTitre: c.data.titre,
+      lien: `${c.url}#definitions`,
+      definitionHtml: rendu?.definitionHtml ?? '',
+      exempleHtml: rendu?.exempleHtml ?? '',
+      brut: `${d.terme} ${markdownVersTexte(d.definition)} ${markdownVersTexte(d.exemple)}`,
+    };
+  }),
+);
+
+const entrees = regrouperTermes(sources);
+const matieresVues = new Map<string, MatiereVue>(sources.map((s) => [s.matiere, s.vue]));
+
+// Ancres uniques, titres rendus (code en ligne éventuel), texte normalisé pour le filtre.
+const vues = await (async () => {
+  const prises = new Set<string>();
+  return Promise.all(
+    entrees.map(async (e) => {
+      let ancre = ancreTerme(e.cle);
+      for (let n = 2; prises.has(ancre); n++) ancre = `${ancreTerme(e.cle)}-${n}`;
+      prises.add(ancre);
+      return {
+        ...e,
+        ancre,
+        termeHtml: await rendreEnLigne(e.terme),
+        recherche: normaliser(e.definitions.map((d) => d.brut).join(' ')),
+        plusieurs: e.definitions.length > 1,
+      };
+    }),
+  );
+})();
+
+const lettres = lettresPresentes(vues);
+const groupes = lettres.map((lettre) => ({ lettre, items: vues.filter((v) => v.lettre === lettre) }));
+
+// Puces de tomes : seulement ceux qui ont des définitions, dans l'ordre des tomes.
+const tomes = [...matieresVues.values()]
+  .sort((a, b) => a.ordre - b.ordre || a.nom.localeCompare(b.nom, 'fr'))
+  .map((m) => ({ m, n: vues.filter((v) => v.matieres.includes(m.slug)).length }));
+
+const nav = KANJI_NAVIGATION.glossaire;
+const total = vues.length;
+---
+
+<BaseLayout titre="Glossaire" description="Toutes les définitions de mes cours, de A à Z." pageActive="glossaire">
+  <EnTeteSection
+    niveau={1}
+    kanji={nav.kanji}
+    lecture={nav.lecture}
+    titre="Glossaire"
+    sousTitre={total ? `${pluriel(total, 'terme')}, de A à Z. Filtre par mot ou par tome.` : undefined}
+  />
+
+  {
+    total ? (
+      <div class="glossaire" data-glossaire data-total={total}>
+        <div class="glossaire__tomes" role="group" aria-label="Filtrer par tome" data-filtre-tomes>
+          <button type="button" class="tome-filtre" aria-pressed="true" data-tome="">
+            Tous <span class="tome-filtre__nb">{total}</span>
+          </button>
+          {tomes.map(({ m, n }) => (
+            <button type="button" class="tome-filtre" aria-pressed="false" data-tome={m.slug} data-couleur={m.couleur}>
+              <span class="tome-filtre__kanji" lang="ja" aria-hidden="true">{m.kanji}</span>
+              {m.nom} <span class="tome-filtre__nb"><span class="sr-only">, </span>{n}<span class="sr-only"> {n > 1 ? 'termes' : 'terme'}</span></span>
+            </button>
+          ))}
+        </div>
+
+        <div class="glossaire__barre" data-barre-glossaire>
+          <div class="glossaire__ligne">
+            <label class="filtre">
+              <Icone nom="recherche" taille={18} />
+              <span class="sr-only">Filtrer les termes</span>
+              <input
+                type="search"
+                placeholder="Filtrer : état, hook, props…"
+                data-filtre-glossaire
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                enterkeyhint="search"
+              />
+              <button type="button" class="filtre__effacer" data-effacer-filtre aria-label="Effacer le filtre" hidden>
+                <Icone nom="fermer" taille={14} />
+              </button>
+            </label>
+            <p class="glossaire__compteur" data-compteur-glossaire>{pluriel(total, 'terme')}</p>
+          </div>
+          <nav class="az" aria-label="Index alphabétique">
+            <ul role="list">
+              {lettres.map((l) => (
+                <li>
+                  <a href={`#${ancreLettre(l)}`} data-lettre-lien={l} aria-label={l === '#' ? 'Chiffres et symboles' : `Lettre ${l}`}>
+                    {l}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+
+        <p class="sr-only" aria-live="polite" data-filtre-statut></p>
+
+        <div class="glossaire__lettres">
+          {groupes.map((g) => (
+            <section class="lettre" id={ancreLettre(g.lettre)} data-lettre={g.lettre} aria-labelledby={`${ancreLettre(g.lettre)}-titre`}>
+              <h2 class="lettre__titre" id={`${ancreLettre(g.lettre)}-titre`}>
+                {g.lettre === '#' ? 'Chiffres et symboles' : g.lettre}
+              </h2>
+              <div class="lettre__grille">
+                {g.items.map((v) => (
+                  <article
+                    class:list={['terme', { 'terme--plusieurs': v.plusieurs }]}
+                    id={v.ancre}
+                    data-terme
+                    data-recherche={v.recherche}
+                    data-tomes={v.matieres.join(' ')}
+                    aria-labelledby={`${v.ancre}-nom`}
+                  >
+                    <header class="terme__tete">
+                      <h3 class="terme__nom" id={`${v.ancre}-nom`} set:html={v.termeHtml} />
+                      <ul class="terme__tomes" role="list" aria-label={v.matieres.length > 1 ? 'Tomes' : 'Tome'}>
+                        {v.matieres.map((slug) => {
+                          const m = matieresVues.get(slug);
+                          return (
+                            <li>
+                              <span class="puce puce--couleur" data-couleur={m?.couleur}>
+                                <span class="kanji" lang="ja" aria-hidden="true">{m?.kanji}</span>
+                                {m?.nom ?? slug}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </header>
+
+                    <div class="terme__definitions">
+                      {v.definitions.map((d) => (
+                        <div class="definition" data-couleur={d.vue.couleur}>
+                          {v.plusieurs && normaliser(d.terme) !== normaliser(v.terme) && <p class="definition__variante">{d.terme}</p>}
+                          <div class="definition__texte" set:html={d.definitionHtml} />
+                          {d.exempleHtml && (
+                            <div class="definition__exemple">
+                              <p class="definition__label">Exemple</p>
+                              <div set:html={d.exempleHtml} />
+                            </div>
+                          )}
+                          <a class="definition__source" href={d.lien}>
+                            {v.plusieurs && <span class="definition__tome" lang="ja" aria-hidden="true">{d.vue.kanji}</span>}
+                            <span class="definition__episode" lang="ja" aria-hidden="true">第{d.chapitre}話</span>
+                            <span class="sr-only">{d.vue.nom}, épisode {d.chapitre} :{' '}</span>
+                            <span class="definition__cours">{d.coursTitre}</span>
+                            <Icone nom="chevron-droite" taille={14} class="definition__fleche" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+
+        <div class="glossaire__vide" data-filtre-vide hidden>
+          <EtatVide kanji={nav.kanji} titre="Aucun terme ne correspond" texte="Essaie un mot plus court, sans accent, ou un autre tome.">
+            <button type="button" class="btn btn--secondaire" data-reinitialiser>Tout afficher</button>
+          </EtatVide>
+        </div>
+      </div>
+    ) : (
+      <EtatVide kanji={nav.kanji} titre="Le glossaire est vide" texte="Ajoute des « definitions: » dans le frontmatter d’un cours : elles apparaîtront ici.">
+        <a class="btn btn--primaire" href={url('/atelier/')}>Ouvrir l’Atelier</a>
+      </EtatVide>
+    )
+  }
+</BaseLayout>
+
+<script>
+  import { initialiserGlossaire } from '../islands/glossaire/filtre.ts';
+
+  initialiserGlossaire();
+</script>
+
+<style>
+  .glossaire {
+    --hauteur-barre: 124px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-4);
+  }
+
+  /* ─── Puces de tomes (filtre) ─── */
+  .glossaire__tomes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+
+  .tome-filtre {
+    position: relative; /* garde les textes sr-only dans la rangée défilante */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: var(--cible);
+    padding: 0 var(--s-4);
+    border: 0;
+    border-radius: var(--r-full);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+    color: var(--c-ink-2);
+    font: 500 0.9375rem/1.2 var(--font-ui);
+    white-space: nowrap;
+    transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out), box-shadow var(--d-2) var(--ease-out), transform var(--d-2) var(--ease-spring);
+  }
+
+  .tome-filtre:hover { color: var(--c-ink); box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line-strong); }
+  .tome-filtre:active { transform: scale(0.97); }
+  .tome-filtre:focus-visible { border-radius: var(--r-full); }
+
+  .tome-filtre__kanji {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    margin-left: calc(-1 * var(--s-2));
+    border-radius: 7px;
+    background: var(--couleur-soft);
+    color: var(--couleur-ink);
+    font: 700 0.875rem/1 var(--font-kanji);
+  }
+
+  .tome-filtre__nb { color: var(--c-ink-3); font: 500 0.8125rem/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+
+  .tome-filtre[aria-pressed="true"] {
+    background: var(--c-ink);
+    box-shadow: none;
+    color: var(--c-bg);
+  }
+
+  .tome-filtre[aria-pressed="true"][data-couleur] { background: var(--couleur); color: var(--c-on-accent); }
+  .tome-filtre[aria-pressed="true"] .tome-filtre__nb { color: inherit; opacity: 0.75; }
+  .tome-filtre[aria-pressed="true"] .tome-filtre__kanji { background: color-mix(in srgb, var(--c-surface) 22%, transparent); color: inherit; }
+
+  /* ─── Barre collante : filtre + index A-Z ─── */
+  .glossaire__barre {
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--safe-top));
+    z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-2);
+    margin: 0 calc(-1 * var(--s-3));
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-lg);
+    background: color-mix(in srgb, var(--c-bg) 86%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glossaire__barre { background: var(--c-bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
+
+  .glossaire__barre[data-colle] { box-shadow: 0 1px 0 var(--c-line); border-radius: 0 0 var(--r-lg) var(--r-lg); }
+
+  .glossaire__ligne { display: flex; align-items: center; gap: var(--s-4); }
+
+  .filtre {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--s-2);
+    min-width: 0;
+    min-height: var(--cible);
+    padding: 0 var(--s-1) 0 var(--s-4);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+    color: var(--c-ink-3);
+    transition: box-shadow var(--d-2) var(--ease-out);
+  }
+
+  .filtre:focus-within { box-shadow: var(--sh-1), inset 0 0 0 2px var(--c-focus); }
+
+  .filtre input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--cible);
+    border: 0;
+    background: none;
+    color: var(--c-ink);
+    font: var(--t-body);
+    outline: none;
+  }
+
+  .filtre input::placeholder { color: var(--c-ink-3); opacity: 1; }
+  .filtre input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; appearance: none; }
+
+  .filtre__effacer {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--cible);
+    height: var(--cible);
+    border: 0;
+    border-radius: var(--r-full);
+    background: none;
+    color: var(--c-ink-3);
+  }
+
+  .filtre__effacer :global(svg) {
+    box-sizing: content-box;
+    padding: 3px;
+    border-radius: var(--r-full);
+    background: color-mix(in srgb, var(--c-ink) 12%, transparent);
+    color: var(--c-surface);
+    stroke-width: 2.5;
+  }
+
+  .glossaire__compteur {
+    flex: none;
+    color: var(--c-ink-3);
+    font: 500 0.875rem/1.2 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .az ul {
+    display: flex;
+    gap: 2px;
+    margin: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .az ul::-webkit-scrollbar { display: none; }
+  .az li { flex: 1 0 auto; scroll-snap-align: start; }
+
+  .az a {
+    display: grid;
+    place-items: center;
+    min-width: var(--cible);
+    height: var(--cible);
+    border-radius: var(--r-sm);
+    color: var(--c-accent);
+    font: 600 0.9375rem/1 var(--font-ui);
+    text-decoration: none;
+    transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out);
+  }
+
+  .az a:hover { background: var(--c-accent-soft); color: var(--c-accent-ink); }
+  .az a[aria-current="true"] { background: var(--c-accent); color: var(--c-on-accent); }
+  .az a[aria-disabled="true"] { color: var(--c-ink-3); opacity: 0.4; pointer-events: none; }
+
+  @media (min-width: 1024px) {
+    .glossaire__barre { top: 0; margin-inline: calc(-1 * var(--s-4)); padding: var(--s-3) var(--s-4); }
+    .az ul { overflow: visible; flex-wrap: wrap; }
+    .az a { min-width: 36px; }
+  }
+
+  @media (max-width: 599px) {
+    /* Puces : une ligne qui défile, bord à bord. */
+    .glossaire__tomes {
+      flex-wrap: nowrap;
+      margin-inline: calc(-1 * var(--gouttiere));
+      padding: var(--s-1) var(--gouttiere);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .glossaire__tomes::-webkit-scrollbar { display: none; }
+    .glossaire__compteur { display: none; }
+    .glossaire__barre { margin-inline: calc(-1 * var(--gouttiere)); padding-inline: var(--gouttiere); border-radius: 0; }
+    .az a { min-width: 40px; }
+  }
+
+  /* ─── Lettres et termes ─── */
+  .glossaire__lettres { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-7); margin-top: var(--s-3); }
+
+  /* Ancres sous la barre collante (le scroll-padding de <html> compte déjà la barre du haut). */
+  .lettre,
+  .terme { scroll-margin-top: calc(var(--hauteur-barre) - var(--s-2)); }
+
+  @media (min-width: 1024px) {
+    .lettre,
+    .terme { scroll-margin-top: calc(var(--hauteur-barre) - var(--s-4)); }
+  }
+
+  .lettre__titre {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+    color: var(--c-ink);
+    font: 700 1.75rem/1 var(--font-ui);
+    letter-spacing: -0.02em;
+  }
+
+  .lettre__titre::after { content: ""; flex: 1; height: 1px; background: var(--c-line); }
+
+  .lettre__grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    align-items: start;
+    gap: var(--s-4);
+  }
+
+  .terme {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-3);
+    min-width: 0;
+    padding: var(--s-5);
+    border-radius: var(--r-lg);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  }
+
+  .terme:target { box-shadow: var(--sh-2), inset 0 0 0 2px var(--c-accent); }
+
+  /* Un terme vu dans plusieurs cours prend toute la largeur : définitions côte à côte. */
+  .terme--plusieurs { grid-column: 1 / -1; }
+
+  .terme__tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
+  .terme__nom { flex: 1 1 auto; min-width: 0; font: var(--t-title3); letter-spacing: var(--t-title3-track); }
+  .terme__tomes { display: flex; flex-wrap: wrap; gap: var(--s-1); margin: 0; }
+
+  .terme__definitions { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+
+  .terme--plusieurs .terme__definitions {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: var(--s-4) var(--s-6);
+  }
+
+  .definition { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--s-2); min-width: 0; }
+
+  .terme--plusieurs .definition {
+    padding-left: var(--s-4);
+    border-left: 2px solid var(--couleur-soft);
+  }
+
+  .definition__variante { color: var(--couleur-ink); font: 600 0.8125rem/1.3 var(--font-ui); }
+  .definition__texte { color: var(--c-ink); font: var(--t-callout); }
+  .definition__texte :global(p + p) { margin-top: var(--s-2); }
+
+  .definition__exemple {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    background: var(--b-exemple-bg);
+    color: var(--b-exemple-ink);
+    font: var(--t-subhead);
+    overflow-wrap: anywhere;
+  }
+
+  .definition__label { color: var(--b-exemple-accent); font: 600 0.6875rem/1.3 var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; }
+  .definition__exemple :global(code) { background: color-mix(in srgb, var(--c-surface) 70%, transparent); color: var(--c-ink); }
+  .definition__exemple :global(figure.code) { margin: 0; }
+  .definition__exemple :global(p) { overflow-wrap: anywhere; }
+
+  .definition__source {
+    display: inline-flex;
+    align-items: center;
+    align-self: start;
+    gap: var(--s-2);
+    max-width: calc(100% + var(--s-2));
+    min-height: var(--cible);
+    margin: calc(-1 * var(--s-2)) 0 calc(-1 * var(--s-3)) calc(-1 * var(--s-2));
+    padding: 0 var(--s-2);
+    border-radius: var(--r-sm);
+    color: var(--c-ink-3);
+    font: var(--t-footnote);
+    text-decoration: none;
+    transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out);
+  }
+
+  .definition__source:hover { background: color-mix(in srgb, var(--c-ink) 5%, transparent); color: var(--c-accent); }
+
+  .definition__tome {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--couleur-soft);
+    color: var(--couleur-ink);
+    font: 700 0.75rem/1 var(--font-kanji);
+  }
+
+  .definition__episode { flex: none; color: var(--c-ink-2); font-size: 0.875rem; white-space: nowrap; }
+  .definition__cours { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .definition__source :global(.definition__fleche) { flex: none; opacity: 0.6; }
+
+  .glossaire__vide { margin-top: var(--s-3); }
+</style>

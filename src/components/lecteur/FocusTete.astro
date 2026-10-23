@@ -1,0 +1,123 @@
+---
+/**
+ * En-tête du Mode Focus (visible seulement sous html[data-focus]) :
+ * « Quitter » (Échap), titre du cours, « Écouter » l'étape (src/scripts/lecteur/focus.ts règle sa cible).
+ */
+import Icone from '../Icone.astro';
+import IconeLecteur from './IconeLecteur.astro';
+
+interface Props {
+  titre: string;
+  chapitre: number;
+}
+
+const { titre, chapitre } = Astro.props;
+---
+
+<div class="focus-tete" data-focus-tete>
+  <button class="focus-tete__quitter" type="button" data-focus-quitter aria-keyshortcuts="Escape">
+    <Icone nom="fermer" taille={16} />
+    <span>Quitter<span class="sr-only"> le Mode Focus</span></span>
+    <kbd class="focus-tete__touche" aria-hidden="true">Échap</kbd>
+  </button>
+
+  <p class="focus-tete__titre">
+    <span class="focus-tete__nom">{titre}</span>
+    <span class="focus-tete__episode" lang="ja" aria-hidden="true">第{chapitre}話</span>
+  </p>
+
+  <button class="btn btn--discret focus-tete__ecouter" type="button" data-ecouter="#essentiel-texte" data-focus-ecouter hidden>
+    <Icone nom="haut-parleur" taille={18} class="ecouter__parler" />
+    <IconeLecteur nom="arret" taille={18} class="ecouter__arret" />
+    <span class="focus-tete__libelle" data-libelle>Écouter</span>
+    <span class="sr-only" data-focus-ecouter-titre></span>
+  </button>
+</div>
+
+<style>
+  .focus-tete {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 40;
+    display: none;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s-3);
+    min-height: calc(var(--focus-tete-h) + var(--safe-top));
+    padding: var(--safe-top) calc(var(--s-6) + var(--safe-right)) 0 calc(var(--s-6) + var(--safe-left));
+    background: var(--c-bg);
+    transition: box-shadow var(--d-2) var(--ease-out);
+  }
+
+  :global(html[data-focus]) .focus-tete { display: grid; }
+  .focus-tete[data-defile] { box-shadow: 0 1px 0 var(--c-line); }
+
+  .focus-tete__quitter {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: var(--cible);
+    padding: 0 var(--s-3) 0 var(--s-3);
+    border: 0;
+    border-radius: var(--r-full);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--c-line-strong);
+    color: var(--c-ink-2);
+    font: 500 0.875rem/1 var(--font-ui);
+    transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out);
+  }
+
+  .focus-tete__quitter:hover { background: var(--c-bg-grouped); color: var(--c-ink); }
+  .focus-tete__quitter:focus-visible { border-radius: var(--r-full); }
+
+  .focus-tete__touche {
+    height: 22px;
+    margin-left: 2px;
+    border: 0;
+    background: var(--c-bg-grouped);
+    color: var(--c-ink-2);
+    font: 600 0.6875rem/22px var(--font-ui);
+  }
+
+  .focus-tete__titre {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--s-2);
+    min-width: 0;
+    max-width: 36rem;
+    color: var(--c-ink-3);
+    font: var(--t-footnote);
+    font-size: 0.875rem;
+  }
+
+  .focus-tete__nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .focus-tete__episode { flex: none; color: var(--c-ink-2); font-weight: 700; }
+
+  .focus-tete__ecouter { justify-self: end; }
+
+  @media (max-width: 599px) {
+    .focus-tete {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      padding-inline: calc(var(--s-2) + var(--safe-left)) calc(var(--s-2) + var(--safe-right));
+      gap: var(--s-2);
+    }
+
+    .focus-tete__titre { justify-content: center; }
+    .focus-tete__nom { display: none; }
+    .focus-tete__ecouter { padding: 0; width: var(--cible); }
+    .focus-tete__libelle {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 599px), (hover: none) and (pointer: coarse) {
+    .focus-tete__touche { display: none; }
+  }
+</style>

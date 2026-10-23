@@ -1,0 +1,18 @@
+# Dépendances et sorties de build
+node_modules/
+dist/
+.build/
+.astro/
+
+# Secrets et environnements locaux
+.env
+.env.*
+!.env.example
+
+# Journaux
+*.log
+npm-debug.log*
+
+# Systèmes
+.DS_Store
+Thumbs.db

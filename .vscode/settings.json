@@ -1,0 +1,64 @@
+{
+  // Formatage
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[astro]": { "editor.defaultFormatter": "astro-build.astro-vscode" },
+  // Les cours : pas de reformatage automatique (les blocs ::: et le YAML restent tels qu'écrits).
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "on",
+    "files.trimTrailingWhitespace": false
+  },
+  "[yaml]": { "editor.formatOnSave": false },
+
+  // Fichiers : UTF-8, fins de ligne LF (comme .editorconfig et .gitattributes)
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.associations": {
+    "*.webmanifest": "json",
+    "devcontainer.json": "jsonc"
+  },
+
+  // Recherche et surveillance : on ignore ce qui est généré
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.astro": true,
+    "**/.build": true,
+    "package-lock.json": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.astro/**": true
+  },
+
+  // TypeScript du projet
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // Git : rappelle les nouveautés (le rituel « git pull en arrivant »)
+  "git.autofetch": true,
+
+  // Orthographe : français + anglais technique
+  "cSpell.language": "fr,en",
+  "cSpell.words": [
+    "Manabi",
+    "drakurei",
+    "kanji",
+    "hanko",
+    "ensō",
+    "washi",
+    "sumi",
+    "sakura",
+    "flashcards",
+    "frontmatter",
+    "slug",
+    "Codespaces",
+    "gh-pages",
+    "FSRS"
+  ]
+}

@@ -1,0 +1,237 @@
+---
+/**
+ * Pétales 花びら qui tombent lentement (accueil). Purement décoratifs : canvas 2D,
+ * pointer-events: none, aria-hidden.
+ * Aucun rendu si : prefers-reduced-motion, html[data-motion="reduit"], html[data-petales="non"],
+ * html[data-focus] (Mode Focus). En pause quand l'onglet est caché.
+ * Coût : 12 à 16 drawImage d'images pré-dessinées par image (bien moins d'1 ms).
+ */
+interface Props {
+  /** Nombre de pétales (12 à 16). Par défaut : selon la largeur de l'écran. */
+  nombre?: number;
+}
+
+const { nombre } = Astro.props;
+---
+
+<canvas class="petales" aria-hidden="true" data-petales-ciel data-nombre={nombre}></canvas>
+
+<script>
+  // Tracé d'un pétale de sakura (encoche au bout), viewBox 20 × 24.
+  const TRACE = 'M10 23C4 19 1.5 12 3 6.5 4 3 7 1.5 8.8 3.6L10 5l1.2-1.4C13 1.5 16 3 17 6.5c1.5 5.5-1 12.5-7 16.5Z';
+  /** Taille maxi d'un pétale (px CSS) : les images pré-dessinées sont faites à cette taille. */
+  const TAILLE_MAX = 18;
+  const DPR_MAX = 2;
+
+  interface Petale {
+    x0: number; // position de base (le balancement s'y ajoute)
+    y: number;
+    taille: number;
+    vy: number; // px/s
+    amplitude: number;
+    frequence: number;
+    phase: number;
+    angle: number;
+    vAngle: number;
+    bascule: number; // rotation « 3D » simulée (largeur qui varie)
+    vBascule: number;
+    teinte: 0 | 1;
+  }
+
+  const hasard = (min: number, max: number) => min + Math.random() * (max - min);
+
+  function demarrer(toile: HTMLCanvasElement): void {
+    const contexte = toile.getContext('2d');
+    if (!contexte) return;
+    const ctx: CanvasRenderingContext2D = contexte;
+    const html = document.documentElement;
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const voulu = Number(toile.dataset.nombre);
+
+    let largeur = 0;
+    let hauteur = 0;
+    let dpr = 1;
+    let sprites: HTMLCanvasElement[] = [];
+    let petales: Petale[] = [];
+    let raf = 0;
+    let avant = 0;
+    let theme = '';
+
+    const autorise = () =>
+      !reduit.matches &&
+      html.dataset.motion !== 'reduit' &&
+      html.dataset.petales !== 'non' &&
+      !html.hasAttribute('data-focus') &&
+      document.visibilityState === 'visible';
+
+    /** Deux teintes (--c-petal-1, --c-petal-2), dessinées une fois par thème et par densité d'écran. */
+    function dessinerSprites(): void {
+      const style = getComputedStyle(html);
+      const c1 = style.getPropertyValue('--c-petal-1').trim() || 'pink';
+      const c2 = style.getPropertyValue('--c-petal-2').trim() || c1;
+      const forme = new Path2D(TRACE);
+      const cote = Math.ceil(TAILLE_MAX * 1.2 * dpr);
+      sprites = [
+        [c2, c1],
+        [c2, c2],
+      ].map(([base, pointe]) => {
+        const s = document.createElement('canvas');
+        s.width = cote;
+        s.height = cote;
+        const c = s.getContext('2d');
+        if (c) {
+          const k = cote / 24;
+          c.setTransform(k, 0, 0, k, (cote - 20 * k) / 2, 0);
+          const degrade = c.createLinearGradient(0, 24, 0, 0);
+          degrade.addColorStop(0, base ?? c1);
+          degrade.addColorStop(1, pointe ?? c1);
+          c.fillStyle = degrade;
+          c.fill(forme);
+        }
+        return s;
+      });
+      theme = html.dataset.theme ?? '';
+    }
+
+    function nouveau(enHaut: boolean): Petale {
+      return {
+        x0: hasard(-20, largeur + 20),
+        y: enHaut ? hasard(-60, -20) : hasard(-40, hauteur),
+        taille: hasard(10, TAILLE_MAX),
+        vy: hasard(16, 34),
+        amplitude: hasard(14, 42),
+        frequence: hasard(0.35, 0.8),
+        phase: hasard(0, Math.PI * 2),
+        angle: hasard(0, Math.PI * 2),
+        vAngle: hasard(0.15, 0.6) * (Math.random() < 0.5 ? -1 : 1),
+        bascule: hasard(0, Math.PI * 2),
+        vBascule: hasard(0.6, 1.4),
+        teinte: Math.random() < 0.5 ? 0 : 1,
+      };
+    }
+
+    function nombreVoulu(): number {
+      if (voulu >= 12 && voulu <= 16) return Math.round(voulu);
+      return Math.max(12, Math.min(16, Math.round(largeur / 110)));
+    }
+
+    function dimensionner(): void {
+      const r = toile.getBoundingClientRect();
+      const nouveauDpr = Math.min(DPR_MAX, window.devicePixelRatio || 1);
+      if (r.width === largeur && r.height === hauteur && nouveauDpr === dpr && sprites.length) return;
+      largeur = r.width;
+      hauteur = r.height;
+      if (nouveauDpr !== dpr || !sprites.length) {
+        dpr = nouveauDpr;
+        dessinerSprites();
+      }
+      toile.width = Math.round(largeur * dpr);
+      toile.height = Math.round(hauteur * dpr);
+      const n = nombreVoulu();
+      while (petales.length < n) petales.push(nouveau(false));
+      petales.length = n;
+      if (!raf && autorise()) dessiner(0);
+    }
+
+    function dessiner(dt: number): void {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, toile.width, toile.height);
+      const vent = 6; // px/s, légère dérive vers la droite
+      for (let i = 0; i < petales.length; i++) {
+        const p = petales[i]!;
+        p.y += p.vy * dt;
+        p.x0 += vent * dt;
+        p.phase += p.frequence * dt;
+        p.angle += p.vAngle * dt;
+        p.bascule += p.vBascule * dt;
+        const x = p.x0 + Math.sin(p.phase) * p.amplitude;
+        if (p.y > hauteur + 40 || x > largeur + 60) {
+          petales[i] = nouveau(true);
+          continue;
+        }
+        // Apparition en haut, effacement en bas.
+        const alpha = Math.min(1, (p.y + 40) / 120) * Math.min(1, (hauteur + 40 - p.y) / 160) * 0.85;
+        if (alpha <= 0) continue;
+        const echelle = p.taille / TAILLE_MAX; // l'image est déjà à la densité de l'écran
+        const largeurVue = Math.max(0.35, Math.abs(Math.cos(p.bascule))) * echelle;
+        const cos = Math.cos(p.angle);
+        const sin = Math.sin(p.angle);
+        const sprite = sprites[p.teinte]!;
+        const demi = sprite.width / 2;
+        ctx.globalAlpha = alpha;
+        ctx.setTransform(cos * largeurVue, sin * largeurVue, -sin * echelle, cos * echelle, x * dpr, p.y * dpr);
+        ctx.drawImage(sprite, -demi, -demi);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function image(t: number): void {
+      const dt = Math.min(0.05, Math.max(0, (t - avant) / 1000)); // un onglet ralenti ne fait pas sauter les pétales
+      avant = t;
+      dessiner(dt);
+      raf = window.requestAnimationFrame(image);
+    }
+
+    function jouer(): void {
+      if (raf) return;
+      toile.dataset.actif = '';
+      avant = performance.now();
+      raf = window.requestAnimationFrame(image);
+    }
+
+    function arreter(effacer: boolean): void {
+      if (raf) window.cancelAnimationFrame(raf);
+      raf = 0;
+      if (effacer) {
+        delete toile.dataset.actif;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, toile.width, toile.height);
+      }
+    }
+
+    function maj(): void {
+      if (html.dataset.theme !== theme && sprites.length) dessinerSprites();
+      if (autorise()) jouer();
+      // Onglet caché : on fige simplement ; réglage ou Focus : on efface tout.
+      else arreter(document.visibilityState === 'visible');
+    }
+
+    new ResizeObserver(dimensionner).observe(toile);
+    new MutationObserver(maj).observe(html, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-motion', 'data-petales', 'data-focus'],
+    });
+    reduit.addEventListener('change', maj);
+    document.addEventListener('visibilitychange', maj);
+    dimensionner();
+    maj();
+  }
+
+  const toile = document.querySelector<HTMLCanvasElement>('canvas[data-petales-ciel]');
+  if (toile) demarrer(toile);
+</script>
+
+<style>
+  .petales {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-out);
+  }
+
+  .petales[data-actif] { opacity: 1; }
+
+  :global(html[data-petales="non"]) .petales,
+  :global(html[data-motion="reduit"]) .petales,
+  :global(html[data-focus]) .petales { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .petales { display: none; }
+  }
+</style>

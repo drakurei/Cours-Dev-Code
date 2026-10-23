@@ -1,0 +1,44 @@
+// Environnement de travail pour GitHub Codespaces (et les Dev Containers de VS Code).
+// Rien à installer sur le PC : Node 24, GitHub CLI et Claude Code sont prêts à l'ouverture.
+// Guide : docs/TRAVAILLER-PARTOUT.md
+{
+  "name": "Manabi 学び",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+  "containerEnv": {
+    "TZ": "Europe/Paris"
+  },
+  // Dépendances + identité Git du repo (le no-reply GitHub de drakurei, jamais un e-mail pro).
+  "postCreateCommand": {
+    "dependances": "npm ci",
+    "identite-git": "if [ \"${GITHUB_USER:-}\" = \"drakurei\" ]; then git config user.name drakurei && git config user.email 229352063+drakurei@users.noreply.github.com; fi"
+  },
+  "forwardPorts": [4321],
+  "portsAttributes": {
+    "4321": {
+      "label": "Manabi",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "astro-build.astro-vscode",
+        "esbenp.prettier-vscode",
+        "editorconfig.editorconfig",
+        "vitest.explorer",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-french",
+        "github.vscode-pull-request-github",
+        "anthropic.claude-code"
+      ]
+    },
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  }
+}

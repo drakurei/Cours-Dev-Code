@@ -1,0 +1,46 @@
+---
+/**
+ * Exercices d'un cours : l'îlot React (indices un par un, « Je l'ai fait »).
+ * Sans JavaScript : énoncé + indices emboîtés en dépliants (AidesExercice).
+ */
+import Exercices from './Exercices.tsx';
+import AidesExercice from '../../components/AidesExercice.astro';
+import type { ExerciceRendu } from '../../lib/donnees-cours.ts';
+import { NIVEAUX_EXERCICE_LIBELLES } from '../../lib/libelles.ts';
+
+interface Props {
+  exercices: ExerciceRendu[];
+}
+
+const { exercices } = Astro.props;
+const jeu = exercices.map(({ index, cle, titreHtml, niveau, enonceHtml, indicesHtml, solutionHtml }) => ({
+  index,
+  cle,
+  titreHtml,
+  niveau,
+  enonceHtml,
+  indicesHtml,
+  solutionHtml,
+}));
+---
+
+<div class="ap-ilot">
+  <Exercices client:visible={{ rootMargin: '400px' }} exercices={jeu} />
+  <noscript>
+    <style>.ap-ilot > astro-island { display: none !important; }</style>
+    <ol class="ap-repli" role="list">
+      {
+        exercices.map((e) => (
+          <li class="carte ap-repli__item">
+            <p class="ap-repli__num">
+              Exercice {e.index + 1} · {NIVEAUX_EXERCICE_LIBELLES[e.niveau]}
+            </p>
+            <p class="ap-repli__question" set:html={e.titreHtml} />
+            <div set:html={e.enonceHtml} />
+            <AidesExercice indices={e.indicesHtml} solution={e.solutionHtml} />
+          </li>
+        ))
+      }
+    </ol>
+  </noscript>
+</div>

@@ -1,0 +1,38 @@
+---
+/**
+ * Flashcards d'un cours : l'îlot React (carte qui se retourne + notes FSRS).
+ * Sans JavaScript : chaque carte est un dépliant question / réponse.
+ */
+import Flashcards from './Flashcards.tsx';
+import type { FlashcardRendue } from '../../lib/donnees-cours.ts';
+
+interface Props {
+  coursId: string;
+  cartes: FlashcardRendue[];
+}
+
+const { coursId, cartes } = Astro.props;
+// Une question en double = une seule carte (même identifiant SRS).
+const uniques = cartes.filter((c, i) => cartes.findIndex((x) => x.id === c.id) === i);
+const jeu = uniques.map(({ id, qHtml, rHtml }) => ({ id, qHtml, rHtml }));
+---
+
+<div class="ap-ilot">
+  <Flashcards client:visible={{ rootMargin: '400px' }} coursId={coursId} cartes={jeu} />
+  <noscript>
+    <style>.ap-ilot > astro-island { display: none !important; }</style>
+    <ul class="ap-repli" role="list">
+      {
+        uniques.map((c) => (
+          <li class="carte ap-repli__item">
+            <p class="ap-repli__question" set:html={c.qHtml} />
+            <details class="aide">
+              <summary>Voir la réponse</summary>
+              <div class="aide__corps" set:html={c.rHtml} />
+            </details>
+          </li>
+        ))
+      }
+    </ul>
+  </noscript>
+</div>

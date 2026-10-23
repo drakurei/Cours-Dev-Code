@@ -1,0 +1,254 @@
+---
+/**
+ * Barre d'onglets (< 1024 px), matériau verre, en bas de l'écran (zone sûre respectée) :
+ * Aujourd'hui, Tomes, Réviser, Glossaire, Plus. « Plus » ouvre une feuille (<dialog>)
+ * avec Projets, Atelier, Réglages et la recherche.
+ */
+import Icone from './Icone.astro';
+import { KANJI_NAVIGATION, type PageNav } from '../lib/kanji.ts';
+import { url } from '../lib/url.ts';
+
+interface Props {
+  pageActive?: PageNav | null | undefined;
+}
+
+const { pageActive = null } = Astro.props;
+const onglets: PageNav[] = ['aujourdhui', 'tomes', 'reviser', 'glossaire'];
+const dansPlus: PageNav[] = ['projets', 'atelier', 'reglages'];
+const plusActif = pageActive !== null && dansPlus.includes(pageActive);
+---
+
+<nav class="tabbar verre" aria-label="Navigation principale">
+  <ul role="list" class="tabbar__liste">
+    {
+      onglets.map((cle) => {
+        const p = KANJI_NAVIGATION[cle];
+        const actif = cle === pageActive;
+        return (
+          <li>
+            <a class="tabbar__onglet" href={url(p.chemin)} aria-current={actif ? 'page' : undefined}>
+              <span class="tabbar__icone">
+                <span class="tabbar__kanji" lang="ja" aria-hidden="true">{p.kanji}</span>
+                {cle === 'reviser' && <span class="tabbar__badge" data-badge="a-reviser" hidden>0</span>}
+              </span>
+              <span class="tabbar__libelle">{p.libelle}</span>
+            </a>
+          </li>
+        );
+      })
+    }
+    <li>
+      <button
+        class="tabbar__onglet"
+        type="button"
+        data-ouvrir-feuille="feuille-plus"
+        aria-haspopup="dialog"
+        aria-controls="feuille-plus"
+        data-actif={plusActif ? '' : undefined}
+      >
+        <span class="tabbar__icone"><Icone nom="plus" taille={24} /></span>
+        <span class="tabbar__libelle">Plus</span>
+      </button>
+    </li>
+  </ul>
+</nav>
+
+<dialog class="feuille verre" id="feuille-plus" aria-labelledby="feuille-plus-titre">
+  <div class="feuille__poignee" aria-hidden="true"></div>
+  <div class="feuille__tete">
+    <h2 class="feuille__titre" id="feuille-plus-titre">Plus</h2>
+    <button class="btn btn--icone feuille__fermer" type="button" data-fermer-feuille aria-label="Fermer">
+      <Icone nom="fermer" taille={20} />
+    </button>
+  </div>
+  <ul role="list" class="feuille__liste">
+    <li>
+      <button class="feuille__lien" type="button" data-action="recherche" data-fermer-feuille>
+        <span class="feuille__kanji"><Icone nom="recherche" taille={18} /></span>
+        <span>Rechercher</span>
+      </button>
+    </li>
+    {
+      dansPlus.map((cle) => {
+        const p = KANJI_NAVIGATION[cle];
+        return (
+          <li>
+            <a class="feuille__lien" href={url(p.chemin)} aria-current={cle === pageActive ? 'page' : undefined}>
+              <span class="feuille__kanji" lang="ja" aria-hidden="true">{p.kanji}</span>
+              <span>{p.libelle}</span>
+              <Icone nom="chevron-droite" taille={18} class="feuille__chevron" />
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</dialog>
+
+<script>
+  // Feuille « Plus » : <dialog> natif (focus piégé, Échap) + fermeture au clic sur le voile.
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-ouvrir-feuille]')) {
+    const feuille = document.getElementById(btn.dataset.ouvrirFeuille ?? '') as HTMLDialogElement | null;
+    if (!feuille) continue;
+    btn.addEventListener('click', () => feuille.showModal());
+    feuille.addEventListener('click', (ev) => {
+      const cible = ev.target as Element;
+      if (cible === feuille || cible.closest('[data-fermer-feuille]')) feuille.close();
+    });
+  }
+</script>
+
+<style>
+  .tabbar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+    border-top: 1px solid var(--c-line);
+  }
+
+  .tabbar__liste {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .tabbar__onglet {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    width: 100%;
+    min-height: var(--tabbar-h);
+    padding: 6px 2px 4px;
+    border: 0;
+    background: none;
+    color: var(--c-ink-3);
+    text-decoration: none;
+    transition: color var(--d-1) var(--ease-out);
+  }
+
+  .tabbar__onglet:hover { color: var(--c-ink-2); }
+
+  .tabbar__onglet[aria-current="page"],
+  .tabbar__onglet[data-actif] { color: var(--c-accent); }
+
+  .tabbar__icone {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 26px;
+  }
+
+  .tabbar__kanji { font: 700 1.3125rem/1 var(--font-kanji); }
+
+  .tabbar__libelle {
+    font: 500 0.6875rem/1.1 var(--font-ui);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .tabbar__badge {
+    position: absolute;
+    top: -4px;
+    left: calc(100% - 6px);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--r-full);
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font: 600 0.6875rem/18px var(--font-ui);
+    text-align: center;
+  }
+
+  /* ─── Feuille « Plus » ─── */
+  .feuille {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: 640px;
+    max-height: 85dvh;
+    margin: 0 auto;
+    padding: var(--s-2) var(--s-4) calc(var(--s-5) + var(--safe-bottom));
+    border: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    color: var(--c-ink);
+    box-shadow: var(--sh-3);
+  }
+
+  .feuille::backdrop { background: var(--c-overlay); }
+
+  .feuille[open] { animation: monter var(--d-3) var(--ease-out); }
+
+  @keyframes monter {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+
+  .feuille__poignee {
+    width: 36px;
+    height: 5px;
+    margin: 0 auto var(--s-2);
+    border-radius: var(--r-full);
+    background: var(--c-line-strong);
+  }
+
+  .feuille__tete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s-2);
+  }
+
+  .feuille__titre { font: var(--t-title3); letter-spacing: var(--t-title3-track); padding-left: var(--s-2); }
+  .feuille__fermer { --btn-bg: color-mix(in srgb, var(--c-ink) 7%, transparent); --btn-ink: var(--c-ink-2); }
+
+  .feuille__liste {
+    display: grid;
+    margin: 0;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    overflow: hidden;
+  }
+
+  .feuille__liste li + li { border-top: 1px solid var(--c-line); }
+
+  .feuille__lien {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    width: 100%;
+    min-height: 52px;
+    padding: 0 var(--s-4);
+    border: 0;
+    background: none;
+    color: var(--c-ink);
+    font: var(--t-body);
+    text-align: left;
+    text-decoration: none;
+  }
+
+  .feuille__lien:hover { background: var(--c-bg-grouped); color: var(--c-ink); }
+  .feuille__lien[aria-current="page"] { color: var(--c-accent-ink); font-weight: 600; }
+  .feuille__lien span:nth-child(2) { flex: 1; }
+
+  .feuille__kanji {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent-ink);
+    font: 700 1rem/1 var(--font-kanji);
+  }
+
+  :global(.feuille__chevron) { color: var(--c-ink-3); }
+
+  @media (min-width: 1024px) {
+    .tabbar,
+    .feuille { display: none; }
+  }
+</style>

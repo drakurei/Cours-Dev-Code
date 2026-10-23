@@ -1,0 +1,179 @@
+---
+/**
+ * Liste du sommaire (rail à droite et feuille mobile) : L'essentiel, les notions, « Pour réviser ».
+ * Liens a[data-sommaire=id] : src/scripts/lecteur/sommaire.ts pose aria-current="location" (scrollspy)
+ * et data-vue (notion vue). [data-sommaire-reste] reçoit le temps restant.
+ */
+import IconeLecteur from './IconeLecteur.astro';
+import type { Section } from '../../lib/cours.ts';
+import { KANJI_BLOCS } from '../../lib/kanji.ts';
+import { pluriel } from '../../lib/texte.ts';
+import type { EntreeRevision } from './types.ts';
+
+interface Props {
+  sections: Section[];
+  revisions: EntreeRevision[];
+  duree: number;
+  /** Id du titre qui nomme la navigation. */
+  titreId: string;
+  /** Affiche le titre « Sommaire » (le rail) ; la feuille a déjà le sien. */
+  afficherTitre?: boolean;
+}
+
+const { sections, revisions, duree, titreId, afficherTitre = true } = Astro.props;
+---
+
+<nav class="sommaire-liste" aria-labelledby={titreId}>
+  {afficherTitre && <p class="sommaire-liste__titre" id={titreId}>Sommaire</p>}
+  <ol class="sommaire-liste__groupe" role="list">
+    <li>
+      <a class="sommaire-liste__lien" href="#essentiel" data-sommaire="essentiel">
+        <span class="sommaire-liste__marque sommaire-liste__marque--kanji" lang="ja" aria-hidden="true">{KANJI_BLOCS.essentiel.kanji}</span>
+        <span class="sommaire-liste__texte">{KANJI_BLOCS.essentiel.libelle}</span>
+      </a>
+    </li>
+    {
+      sections.map((s, i) => (
+        <li>
+          <a class="sommaire-liste__lien" href={`#${s.id}`} data-sommaire={s.id} data-vue="false">
+            <span class="sommaire-liste__marque" aria-hidden="true">
+              <span class="sommaire-liste__num">{i + 1}</span>
+              <IconeLecteur nom="coche" taille={12} class="sommaire-liste__coche" />
+            </span>
+            <span class="sommaire-liste__texte">
+              {s.titre}
+              <span class="sr-only" data-sommaire-etat></span>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+  {
+    revisions.length > 0 && (
+      <>
+        <p class="sommaire-liste__titre sommaire-liste__titre--suite">Pour réviser</p>
+        <ul class="sommaire-liste__groupe" role="list">
+          {revisions.map((r) => (
+            <li>
+              <a class="sommaire-liste__lien sommaire-liste__lien--revision" href={`#${r.id}`} data-sommaire={r.id} style={`--badge-bg: var(--b-${r.bloc}-bg); --badge-ink: var(--b-${r.bloc}-ink)`}>
+                <span class="sommaire-liste__marque sommaire-liste__marque--kanji" lang="ja" aria-hidden="true">{r.kanji}</span>
+                <span class="sommaire-liste__texte">{r.libelle}</span>
+                <span class="sommaire-liste__nombre"><span class="sr-only"> : </span>{r.nombre}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+  <p class="sommaire-liste__resume" data-sommaire-reste>{pluriel(sections.length, 'notion')} · {duree} min</p>
+</nav>
+
+<style>
+  .sommaire-liste { display: grid; gap: var(--s-1); }
+
+  .sommaire-liste__titre {
+    padding: 0 var(--s-2);
+    margin-bottom: var(--s-1);
+    color: var(--c-ink-3);
+    font: 600 0.75rem/1.3 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sommaire-liste__titre--suite { margin-top: var(--s-4); }
+
+  .sommaire-liste__groupe { display: grid; gap: 2px; margin: 0; }
+
+  .sommaire-liste__lien {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    min-height: var(--cible);
+    padding: 11px var(--s-2);
+    border-radius: var(--r-sm);
+    color: var(--c-ink);
+    font: 500 0.875rem/1.35 var(--font-ui);
+    text-decoration: none;
+    transition: background-color var(--d-1) var(--ease-out), color var(--d-1) var(--ease-out);
+  }
+
+  .sommaire-liste__lien:hover { color: var(--c-ink); background: var(--c-bg-grouped); }
+  .sommaire-liste__lien:focus-visible { border-radius: var(--r-sm); outline-offset: 0; }
+
+  .sommaire-liste__lien[aria-current="location"] {
+    background: var(--c-accent-soft);
+    color: var(--c-accent-ink);
+    font-weight: 600;
+  }
+
+  .sommaire-liste__texte { flex: 1; min-width: 0; }
+
+  /* Pastille d'état : numéro tant que la notion n'est pas vue, coche ensuite. */
+  .sommaire-liste__marque {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: -1px;
+    border-radius: var(--r-full);
+    box-shadow: inset 0 0 0 1.5px var(--c-line-strong);
+    color: var(--c-ink-3);
+    font: 600 0.6875rem/1 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sommaire-liste__marque > :global(*) { grid-area: 1 / 1; }
+  .sommaire-liste__marque :global(.sommaire-liste__coche) { display: none; }
+
+  .sommaire-liste__lien[data-vue="true"] .sommaire-liste__marque {
+    background: color-mix(in srgb, var(--c-ink) 9%, transparent);
+    box-shadow: none;
+    color: var(--c-ink-2);
+  }
+
+  .sommaire-liste__lien[data-vue="true"] .sommaire-liste__num { display: none; }
+  .sommaire-liste__lien[data-vue="true"] .sommaire-liste__marque :global(.sommaire-liste__coche) { display: block; }
+
+  .sommaire-liste__lien[aria-current="location"] .sommaire-liste__marque {
+    box-shadow: inset 0 0 0 1.5px var(--c-accent);
+    color: var(--c-accent-ink);
+  }
+
+  .sommaire-liste__lien[aria-current="location"][data-vue="true"] .sommaire-liste__marque {
+    background: var(--c-accent);
+    box-shadow: none;
+    color: var(--c-on-accent);
+  }
+
+  /* Kanji (L'essentiel et révisions) : petit badge carré, couleur du bloc. */
+  .sommaire-liste__marque--kanji {
+    width: 24px;
+    height: 24px;
+    margin: -3px 0 -3px -2px;
+    border-radius: 7px;
+    background: var(--badge-bg, var(--b-essentiel-bg));
+    box-shadow: none;
+    color: var(--badge-ink, var(--b-essentiel-ink));
+    font: 700 0.8125rem/1 var(--font-kanji);
+  }
+
+  .sommaire-liste__lien--revision { align-items: center; padding-block: 0; }
+  .sommaire-liste__lien--revision .sommaire-liste__marque--kanji { margin-block: 0; }
+
+  .sommaire-liste__nombre {
+    color: var(--c-ink-3);
+    font: 500 0.8125rem/1 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sommaire-liste__resume {
+    margin-top: var(--s-3);
+    padding: 0 var(--s-2);
+    color: var(--c-ink-3);
+    font: var(--t-footnote);
+  }
+</style>

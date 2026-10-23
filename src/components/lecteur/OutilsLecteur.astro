@@ -1,0 +1,197 @@
+---
+/**
+ * Barre d'outils du lecteur : fil d'Ariane + « Sommaire » (petits écrans) + « Mode Focus » (F).
+ * Collante en haut à partir de 1024 px (fond verre quand elle colle : data-colle, src/scripts/lecteur/barre.ts).
+ * Les boutons n'apparaissent qu'avec JavaScript (attribut hidden retiré par le lecteur).
+ */
+import IconeLecteur from './IconeLecteur.astro';
+import { KANJI_NAVIGATION } from '../../lib/kanji.ts';
+import type { MatiereVue } from '../../lib/matieres.ts';
+import { url, urlTome } from '../../lib/url.ts';
+
+interface Props {
+  matiere: MatiereVue;
+  chapitre: number;
+}
+
+const { matiere, chapitre } = Astro.props;
+---
+
+<div class="outils-lecteur" data-outils-lecteur>
+  <nav class="ariane" aria-label="Fil d’Ariane">
+    <ol role="list">
+      <li>
+        <a href={url('/tomes/')}><span lang="ja" aria-hidden="true">{KANJI_NAVIGATION.tomes.kanji}</span> Tomes</a>
+      </li>
+      <li><a href={urlTome(matiere.slug)}>{matiere.nom}</a></li>
+      <li aria-current="page">
+        <span lang="ja" aria-hidden="true">第{chapitre}話</span><span class="sr-only">Chapitre {chapitre}</span>
+      </li>
+    </ol>
+  </nav>
+
+  <div class="outils-lecteur__actions">
+    <button
+      class="outil outil--sommaire"
+      type="button"
+      data-sommaire-ouvrir
+      aria-haspopup="dialog"
+      aria-controls="lecteur-feuille-sommaire"
+      hidden
+    >
+      <IconeLecteur nom="liste" taille={19} />
+      <span class="outil__libelle">Sommaire</span>
+    </button>
+    <button class="outil outil--focus" type="button" data-focus-ouvrir aria-keyshortcuts="F" hidden>
+      <IconeLecteur nom="focus" taille={19} />
+      <span class="outil__libelle">Mode Focus</span>
+      <kbd class="outil__touche" aria-hidden="true">F</kbd>
+    </button>
+  </div>
+</div>
+
+<style>
+  .outils-lecteur {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+    min-height: 52px;
+    border-radius: var(--r-full);
+    transition:
+      background-color var(--d-2) var(--ease-out),
+      box-shadow var(--d-2) var(--ease-out),
+      padding var(--d-2) var(--ease-out);
+  }
+
+  /* Colle en haut (sous la barre du haut sur mobile) ; devient une capsule de verre quand le texte passe dessous. */
+  .outils-lecteur {
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--safe-top) + var(--s-2));
+    z-index: 20;
+    margin-inline: calc(-1 * var(--s-2));
+    padding: 0 var(--s-1) 0 var(--s-3);
+  }
+
+  @media (min-width: 1024px) {
+    .outils-lecteur {
+      top: var(--s-3);
+      margin-inline: calc(-1 * var(--s-3));
+      padding: var(--s-1) var(--s-2) var(--s-1) var(--s-4);
+    }
+  }
+
+  .outils-lecteur[data-colle] {
+    background: var(--c-glass);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .outils-lecteur[data-colle] { background: var(--c-glass-opaque); }
+  }
+
+  /* Petits écrans : la capsule s'efface quand on lit vers le bas, revient quand on remonte
+     (comme Safari). Elle reste là tant qu'elle a le focus clavier. */
+  @media (max-width: 1023px) {
+    .outils-lecteur {
+      transition:
+        background-color var(--d-2) var(--ease-out),
+        box-shadow var(--d-2) var(--ease-out),
+        transform var(--d-3) var(--ease-out),
+        opacity var(--d-2) var(--ease-out);
+    }
+
+    .outils-lecteur[data-cache]:not(:focus-within) {
+      opacity: 0;
+      transform: translateY(calc(-100% - var(--s-3)));
+      pointer-events: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .outils-lecteur[data-colle] {
+      background: var(--c-glass-opaque);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* ─── Fil d'Ariane ─── */
+  .ariane { min-width: 0; }
+
+  .ariane ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--s-2);
+    margin: 0;
+    color: var(--c-ink-3);
+    font: var(--t-subhead);
+  }
+
+  .ariane li { display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--cible); }
+  .ariane li + li::before { content: "›"; color: var(--c-ink-3); }
+  .ariane a { color: var(--c-ink-2); text-decoration: none; font-weight: 500; }
+  .ariane a:hover { color: var(--c-accent); }
+  .ariane [lang="ja"] { font-weight: 700; }
+  .ariane [aria-current] { color: var(--c-ink); }
+
+  /* ─── Boutons ─── */
+  .outils-lecteur__actions { display: flex; align-items: center; gap: var(--s-2); margin-left: auto; }
+
+  .outil {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-width: var(--cible);
+    min-height: var(--cible);
+    padding: 0 var(--s-3) 0 var(--s-3);
+    border: 0;
+    border-radius: var(--r-full);
+    background: var(--c-surface);
+    box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+    color: var(--c-ink);
+    font: 600 0.9375rem/1 var(--font-ui);
+    white-space: nowrap;
+    transition: box-shadow var(--d-2) var(--ease-out), transform var(--d-2) var(--ease-spring);
+  }
+
+  .outil:hover { box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line-strong); }
+  .outil:active { transform: scale(0.97); }
+  .outil:focus-visible { border-radius: var(--r-full); }
+  .outil :global(svg) { flex: none; color: var(--c-accent); }
+
+  .outil__touche {
+    min-width: 24px;
+    height: 24px;
+    margin-left: 2px;
+    border: 0;
+    background: var(--c-bg-grouped);
+    font: 500 0.75rem/24px var(--font-mono);
+  }
+
+  /* Le sommaire est déjà à droite à partir de 1280 px. */
+  @media (min-width: 1280px) {
+    .outil--sommaire { display: none; }
+  }
+
+  /* Petits écrans : icônes seules (le nom reste lu), pas de touche clavier. */
+  @media (max-width: 599px) {
+    .outil { padding: 0; justify-content: center; }
+    .outil__libelle {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 599px), (hover: none) and (pointer: coarse) {
+    .outil__touche { display: none; }
+  }
+</style>

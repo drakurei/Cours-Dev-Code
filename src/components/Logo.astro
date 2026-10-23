@@ -1,0 +1,77 @@
+---
+/**
+ * Logo Manabi : fleur de sakura à 5 pétales (encoche au bout de chaque pétale) + « Manabi » + 学び.
+ */
+interface Props {
+  /** Affiche le nom à côté de la fleur. */
+  avecTexte?: boolean;
+  /** Taille de la fleur en px. */
+  taille?: number;
+  class?: string;
+}
+
+const { avecTexte = true, taille = 28, class: classe } = Astro.props;
+
+// Un pétale pointant vers le haut, recopié 5 fois à 72°.
+const PETALE =
+  'M50 46C45 42 37 33 37.5 23C38 15 44 11.5 47.6 15.5L50 19.5L52.4 15.5C56 11.5 62 15 62.5 23C63 33 55 42 50 46Z';
+const angles = [0, 72, 144, 216, 288];
+---
+
+<span class:list={['logo', classe]}>
+  <svg class="logo__fleur" width={taille} height={taille} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <g class="logo__petales">
+      {angles.map((a) => <path d={PETALE} transform={`rotate(${a} 50 50)`} />)}
+    </g>
+    <circle class="logo__coeur" cx="50" cy="50" r="7.5" />
+    <circle class="logo__pistil" cx="50" cy="50" r="3" />
+  </svg>
+  {
+    avecTexte && (
+      <span class="logo__texte">
+        <span class="logo__nom">Manabi</span>
+        <span class="logo__kanji" lang="ja">学び</span>
+      </span>
+    )
+  }
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--c-ink);
+  }
+
+  .logo__fleur { flex: none; overflow: visible; }
+
+  .logo__petales { transform-box: view-box; transform-origin: 50px 50px; }
+  .logo__petales path { fill: var(--c-accent); }
+
+  .logo__coeur { fill: var(--c-bg); }
+  .logo__pistil { fill: var(--c-accent-ink); }
+
+  .logo__texte {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .logo__nom {
+    font: 650 1.125rem/1 var(--font-ui);
+    letter-spacing: -0.015em;
+  }
+
+  .logo__kanji {
+    color: var(--c-ink-3);
+    font: 500 0.9375rem/1 var(--font-kanji);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(a:hover) > .logo .logo__petales {
+      transform: rotate(18deg);
+    }
+    .logo__petales { transition: transform var(--d-4) var(--ease-spring); }
+  }
+</style>

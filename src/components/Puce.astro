@@ -1,0 +1,21 @@
+---
+/**
+ * Puce (méta, tag, statut). Le texte vient du slot ; kanji facultatif devant.
+ *   <Puce>8 min</Puce>   <Puce variante="couleur" couleur="ai" kanji="応">React</Puce>
+ */
+import type { Couleur } from '../lib/schema.ts';
+
+interface Props {
+  variante?: 'neutre' | 'accent' | 'couleur' | 'contour';
+  couleur?: Couleur | undefined;
+  kanji?: string | undefined;
+  class?: string;
+}
+
+const { variante = 'neutre', couleur, kanji, class: classe } = Astro.props;
+---
+
+<span class:list={['puce', variante !== 'neutre' && `puce--${variante}`, classe]} data-couleur={couleur}>
+  {kanji && <span class="kanji" lang="ja" aria-hidden="true">{kanji}</span>}
+  <slot />
+</span>

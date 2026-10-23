@@ -1,0 +1,28 @@
+---
+/**
+ * Badge kanji : carré arrondi, kanji en Mincho. Toujours décoratif (aria-hidden) :
+ * le libellé français doit être écrit à côté. `lecture` = infobulle (ex. « ren — s'entraîner »).
+ */
+import type { Couleur } from '../lib/schema.ts';
+
+interface Props {
+  kanji: string;
+  lecture?: string | undefined;
+  taille?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  /** doux (défaut) : fond teinté ; plein : fond coloré ; nu : sans fond. */
+  variante?: 'doux' | 'plein' | 'nu';
+  /** Couleur de matière (sinon l'accent sakura). */
+  couleur?: Couleur | undefined;
+  class?: string;
+}
+
+const { kanji, lecture, taille = 'md', variante = 'doux', couleur, class: classe } = Astro.props;
+---
+
+<span
+  class:list={['badge-kanji', `badge-kanji--${taille}`, variante !== 'doux' && `badge-kanji--${variante}`, classe]}
+  data-couleur={couleur}
+  lang="ja"
+  aria-hidden="true"
+  title={lecture}>{kanji}</span
+>

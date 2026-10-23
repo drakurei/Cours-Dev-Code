@@ -1,0 +1,812 @@
+/*
+ * Page « Aujourd'hui » : mise en page, îlots (src/islands/accueil) et leurs squelettes.
+ * Chargé par src/pages/index.astro (et non par les îlots) : les styles sont là dès le
+ * premier affichage, squelettes compris. Uniquement des tokens de src/styles/tokens.css.
+ */
+
+/* ─── Page ─── */
+.accueil {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+@media (min-width: 1024px) {
+  .accueil { gap: var(--s-7); }
+}
+
+/* ─── En-tête : date, salutation, régularité ─── */
+.accueil-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-4) var(--s-5);
+}
+
+.accueil-tete__texte { min-width: 0; }
+
+.accueil-tete__date {
+  min-height: 1.4em;
+  margin-bottom: var(--s-1);
+  color: var(--c-ink-2);
+  font: 600 0.8125rem/1.4 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.accueil-tete__titre {
+  font: var(--t-large);
+  letter-spacing: var(--t-large-track);
+}
+
+.accueil-tete__jp {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+@media (max-width: 599px) {
+  .accueil-tete__titre { font: var(--t-title1); letter-spacing: var(--t-title1-track); }
+}
+
+.stats-jour {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 36px;
+  padding: 0 14px 0 var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-surface);
+  box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  color: var(--c-ink);
+  font: 600 0.9375rem/1.2 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stat__kanji {
+  color: var(--c-accent);
+  font: 700 1rem/1 var(--font-kanji);
+}
+
+.stat--discret {
+  padding-inline: 14px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  color: var(--c-ink-2);
+  font-weight: 500;
+}
+
+.stat--discret .stat__valeur { color: var(--c-ink); font-weight: 600; }
+
+/* ─── Squelettes (rendu serveur, avant les îlots) ─── */
+.squelette {
+  display: block;
+  height: 14px;
+  border-radius: var(--r-xs);
+  background: var(--c-bg-grouped);
+}
+
+.squelette--titre { width: min(100%, 26ch); height: 32px; margin-block: var(--s-1); }
+.squelette--meta { width: min(60%, 220px); height: 12px; }
+.squelette--ligne { width: min(100%, 44ch); }
+.squelette--court { width: min(62%, 26ch); }
+.squelette--bouton { width: 168px; height: 52px; margin-top: var(--s-4); border-radius: var(--r-full); }
+.squelette--rond { flex: none; width: 44px; height: 44px; border-radius: var(--r-full); }
+.squelette--enso { width: 96px; height: 96px; border-radius: var(--r-full); background: none; box-shadow: inset 0 0 0 7px var(--c-bg-grouped); }
+
+/* ─── Mission du jour ─── */
+.mission { container-type: inline-size; }
+
+.mission-carte {
+  --mission-h: 328px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-6);
+  min-height: var(--mission-h);
+  padding: var(--s-6) calc(var(--s-6) + var(--s-2));
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--couleur, var(--c-accent)) 9%, transparent), transparent 60%),
+    var(--c-surface);
+  box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line);
+  overflow: hidden;
+}
+
+.mission-carte__texte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.mission-carte__surtitre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--s-2);
+  color: var(--c-accent-ink);
+  font: 600 0.8125rem/1.2 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-carte__titre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  max-width: 32ch;
+  font: var(--t-title1);
+  letter-spacing: var(--t-title1-track);
+}
+
+.mission-carte__leger {
+  color: var(--c-ink-2);
+  font-weight: 500;
+}
+
+.mission-carte__meta {
+  color: var(--c-ink-3);
+  font: 500 0.8125rem/1.4 var(--font-ui);
+}
+
+.mission-carte__texte-court {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-width: 58ch;
+  color: var(--c-ink-2);
+  font: var(--t-callout);
+}
+
+.mission-carte__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-5);
+  margin-top: var(--s-4);
+}
+
+.mission-carte__secondaire {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--s-1);
+  min-width: 0;
+  color: var(--c-ink-2);
+  font: var(--t-subhead);
+}
+
+.mission-carte__secondaire a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--cible);
+  padding-inline: var(--s-1);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mission-carte__secondaire a:hover { text-decoration: underline; }
+.mission-carte__secondaire svg { flex: none; }
+
+/* Visuel de droite : pile de cartes, ensō ou hanko. */
+.mission-carte__visuel {
+  display: grid;
+  place-items: center;
+  width: 300px;
+  height: 200px;
+}
+
+.mission-pile {
+  position: relative;
+  width: 260px;
+  height: 172px;
+}
+
+.mission-pile__carte {
+  position: absolute;
+  inset: 4px;
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+}
+
+.mission-pile__carte--3 { background: var(--c-surface-2); rotate: 7deg; translate: 14px 6px; }
+.mission-pile__carte--2 { rotate: -4deg; translate: 6px 2px; }
+
+.mission-pile__carte--1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 18px var(--s-5) var(--s-4);
+  box-shadow: var(--sh-2), inset 0 0 0 1px var(--c-line);
+}
+
+.mission-pile__tete {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--c-ink-3);
+  font: 600 0.75rem/1.2 var(--font-ui);
+}
+
+.mission-pile__question {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  color: var(--c-ink);
+  font: 700 1.25rem/1.3 var(--font-read);
+}
+
+.mission-pile__kanji {
+  align-self: center;
+  color: var(--couleur, var(--c-ink));
+  font: 700 3.5rem/1 var(--font-kanji);
+}
+
+.mission-pile__pied {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  color: var(--c-ink-3);
+  font: 500 0.75rem/1.2 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.mission-pile__petale {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  rotate: 28deg;
+  fill: var(--c-petal-2);
+}
+
+.mission-carte__enso {
+  --enso-encre: var(--couleur, var(--c-accent));
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+}
+
+.mission-carte__enso-valeur {
+  color: var(--c-ink);
+  font: 650 1.5rem/1 var(--font-ui);
+  letter-spacing: -0.02em;
+}
+
+.mission-carte__hanko { display: grid; place-items: center; }
+
+/*
+ * Carte moyenne (tablette, petite fenêtre) puis étroite (téléphone) : pas de visuel.
+ * Hauteur réservée = la plus grande des variantes courantes : rien ne saute à l'affichage.
+ */
+@container (max-width: 859px) {
+  .mission-carte {
+    --mission-h: 300px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    padding: var(--s-5) var(--s-6);
+  }
+
+  .mission-carte__visuel { display: none; }
+  /* En cours : la progression (méta) suffit, l'essentiel attend dans le cours. */
+  .mission-carte[data-mission="continuer"] .mission-carte__texte-court { display: none; }
+  .mission-carte__actions { margin-top: auto; padding-top: var(--s-4); }
+  .mission-carte--attente .squelette--bouton { margin-top: auto; }
+}
+
+@container (max-width: 599px) {
+  .mission-carte {
+    --mission-h: 352px;
+    padding: var(--s-5);
+  }
+
+  .mission-carte__titre { font: var(--t-title2); letter-spacing: var(--t-title2-track); }
+  /* « environ 6 min » passe à la ligne, sans point en tête de ligne. */
+  .mission-carte__duree { display: block; }
+  .mission-carte__point { display: none; }
+  /* Sans lien secondaire, il reste la place d'une ligne d'essentiel de plus. */
+  .mission-carte:not(:has(.mission-carte__secondaire)) .mission-carte__texte-court { -webkit-line-clamp: 3; line-clamp: 3; }
+  .mission-carte__actions { flex-direction: column; align-items: stretch; align-self: stretch; }
+  .mission-carte__bouton { width: 100%; }
+  .mission-carte__secondaire { justify-content: center; text-align: center; }
+  .mission-carte--attente .squelette--bouton { width: 100%; }
+}
+
+/* ─── Tableau du jour : reprendre / révisions / minuteur ─── */
+.tableau-jour { container-type: inline-size; }
+
+.tableau-jour__grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+}
+
+@container (min-width: 600px) {
+  .tableau-jour__grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tuile--reprendre { grid-column: 1 / -1; }
+}
+
+@container (min-width: 960px) {
+  .tableau-jour__grille { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .tuile--reprendre { grid-column: auto; }
+}
+
+.tuile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+}
+
+.tuile__tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: var(--cible);
+}
+
+.tuile__titre {
+  font: var(--t-headline);
+  letter-spacing: var(--t-headline-track);
+}
+
+.tuile__lien {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--cible);
+  margin-right: calc(-1 * var(--s-2));
+  padding-inline: var(--s-2);
+  border-radius: var(--r-sm);
+  font: 500 0.9375rem/1.2 var(--font-ui);
+  text-decoration: none;
+}
+
+.tuile__lien:hover { text-decoration: underline; }
+.tuile__kanji { color: var(--c-ink-3); font: 700 1.0625rem/1 var(--font-kanji); }
+:where(.tuile__tete) .tuile__icone { color: var(--c-ink-3); }
+
+/* Reprendre : liste groupée, rangées pleine largeur dans la tuile. */
+.tuile--reprendre { padding: var(--s-2) var(--s-2) var(--s-2); gap: 0; }
+.tuile--reprendre .tuile__tete { padding: 0 var(--s-2) 0 var(--s-4); }
+
+/* Hauteur de 3 rangées (64 px + filets) réservée : squelette, liste et état vide ont la même taille. */
+.reprendre { min-height: calc(3 * 64px + 2px); margin: 0; padding: 0; list-style: none; }
+
+.reprendre__item + .reprendre__item::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 0 var(--s-4) 0 calc(var(--s-4) + 44px + var(--s-3));
+  background: var(--c-line);
+}
+
+.ligne-cours {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 64px;
+  padding: 10px var(--s-4);
+  border-radius: var(--r-md);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: background-color var(--d-1) var(--ease-out);
+}
+
+a.ligne-cours:hover { background: var(--c-bg-grouped); color: var(--c-ink); }
+a.ligne-cours:focus-visible { border-radius: var(--r-md); outline-offset: -2px; }
+
+.ligne-cours__enso { --enso-encre: var(--c-accent); }
+
+.ligne-cours__texte {
+  display: grid;
+  flex: 1;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.ligne-cours__titre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font: 600 1rem/1.3 var(--font-ui);
+}
+
+.ligne-cours__meta { color: var(--c-ink-3); font: var(--t-footnote); }
+
+.ligne-cours__pourcent {
+  flex: none;
+  color: var(--c-ink-2);
+  font: 600 0.875rem/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.ligne-cours__chevron { flex: none; color: var(--c-ink-3); }
+
+.reprendre--vide {
+  display: grid;
+  place-content: center;
+  gap: var(--s-1);
+  min-height: calc(3 * 64px + 2px);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  text-align: center;
+}
+
+.reprendre__vide-titre { color: var(--c-ink); font: var(--t-headline); }
+.reprendre__vide-texte { max-width: 36ch; color: var(--c-ink-2); font: var(--t-subhead); }
+
+/* Révisions : ensō + légende. */
+.revisions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "enso liste"
+    "enso demain";
+  align-items: center;
+  column-gap: var(--s-5);
+  row-gap: var(--s-2);
+}
+
+.revisions__enso {
+  --enso-encre: var(--c-accent);
+  position: relative;
+  grid-area: enso;
+  display: grid;
+  place-items: center;
+}
+
+.revisions__centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  line-height: 1;
+}
+
+.revisions__nombre {
+  color: var(--c-ink);
+  font: 700 1.75rem/1 var(--font-ui);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.revisions__unite {
+  margin-top: var(--s-1);
+  color: var(--c-ink-2);
+  font: 600 0.6875rem/1 var(--font-ui);
+}
+
+.revisions__fait { color: var(--c-hanko); font: 700 2rem/1 var(--font-kanji); }
+
+.revisions__liste {
+  grid-area: liste;
+  align-self: end;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  color: var(--c-ink);
+  font: var(--t-subhead);
+}
+
+.revisions__liste li { display: flex; align-items: center; gap: var(--s-2); }
+.revisions__liste strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.revisions__pastille {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-full);
+  background: var(--c-accent);
+}
+
+.revisions__pastille--nouvelles { background: var(--b-quoi-accent); }
+.revisions__bravo { color: var(--c-ink-2); }
+
+.revisions__demain {
+  grid-area: demain;
+  align-self: start;
+  color: var(--c-ink-3);
+  font: var(--t-footnote);
+}
+
+.revisions--attente .revisions__liste { gap: var(--s-3); }
+.revisions--attente .squelette { width: 100%; }
+
+/* Minuteur rapide. */
+.tuile--minuteur { gap: var(--s-3); }
+
+.minuteur-rapide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.minuteur-rapide__ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.minuteur-rapide__temps {
+  color: var(--c-ink);
+  font: 600 2.5rem/1.1 var(--font-ui);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.minuteur-rapide[data-etat="pause"] .minuteur-rapide__temps { color: var(--c-ink-2); }
+
+.minuteur-rapide__statut {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+  font: var(--t-caption);
+  letter-spacing: var(--t-caption-track);
+}
+
+.minuteur-rapide[data-etat="fini"] .minuteur-rapide__statut { background: var(--c-bg-grouped); color: var(--c-ink-2); }
+
+/* Contrôle segmenté : de vrais boutons radio (flèches du clavier comprises). */
+.segments {
+  display: flex;
+  gap: 2px;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--c-bg-grouped);
+}
+
+.segments__option {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: var(--cible);
+  border-radius: calc(var(--r-sm) - 2px);
+  color: var(--c-ink-2);
+  font: 600 0.9375rem/1 var(--font-ui);
+  cursor: pointer;
+  transition: background-color var(--d-2) var(--ease-out), color var(--d-2) var(--ease-out), box-shadow var(--d-2) var(--ease-out);
+}
+
+.segments__radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.segments__option:has(.segments__radio:checked),
+.segments__option[data-choisi] {
+  background: var(--c-surface);
+  box-shadow: var(--sh-1);
+  color: var(--c-ink);
+}
+
+[data-theme="dark"] .segments__option:has(.segments__radio:checked),
+[data-theme="dark"] .segments__option[data-choisi] {
+  background: var(--c-surface-2);
+}
+
+.segments__option:has(.segments__radio:focus-visible) {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+}
+
+.segments__option:not(:has(:checked)):hover { color: var(--c-ink); }
+.segments:disabled .segments__option { cursor: default; color: var(--c-ink-3); }
+.segments:disabled .segments__option:has(:checked) { color: var(--c-ink-2); }
+
+.minuteur-rapide__actions { display: flex; gap: var(--s-2); }
+.minuteur-rapide__principal { flex: 1; }
+
+/* ─── Ensō (îlots React) : même rendu que src/components/Enso.astro ─── */
+.acc-enso {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--taille);
+  height: var(--taille);
+}
+
+.acc-enso svg { overflow: visible; }
+
+.acc-enso path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 7;
+}
+
+.acc-enso__fond { stroke: var(--c-line); }
+
+.acc-enso__trait {
+  stroke: var(--enso-encre, var(--c-ink));
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: calc(100 - var(--valeur) * 100);
+  transition: stroke-dashoffset var(--d-4) var(--ease-out);
+}
+
+.acc-enso[data-valeur="0"] .acc-enso__trait { opacity: 0; }
+.acc-enso[data-valeur="100"] { --enso-encre: var(--c-hanko); }
+
+.acc-enso__centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ─── Hanko 済 (tout est lu) ─── */
+.acc-hanko {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  rotate: -8deg;
+}
+
+.acc-hanko__tampon { overflow: visible; animation: acc-tamponner var(--d-4) var(--ease-out) both; }
+.acc-hanko__tampon rect { fill: none; stroke: var(--c-hanko); stroke-width: 3.2; }
+
+.acc-hanko__tampon text {
+  fill: var(--c-hanko);
+  font-family: var(--font-kanji);
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.acc-hanko__lignes {
+  position: absolute;
+  inset: -60%;
+  width: 220%;
+  height: 220%;
+  opacity: 0.3;
+  pointer-events: none;
+  animation: acc-lignes 900ms var(--ease-out) both 160ms;
+}
+
+.acc-hanko__lignes line { stroke: var(--c-hanko); stroke-width: 1.2; stroke-linecap: round; }
+
+@keyframes acc-tamponner {
+  0% { opacity: 0; transform: scale(1.4); }
+  55% { opacity: 1; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes acc-lignes {
+  0% { opacity: 0; transform: scale(0.7); }
+  35% { opacity: 0.55; }
+  100% { opacity: 0.3; transform: scale(1); }
+}
+
+/* ─── Tomes (sélecteurs préfixés : ils doivent battre ul[role="list"] { padding: 0 } de base.css) ─── */
+.accueil .etagere-h {
+  display: flex;
+  gap: var(--s-5);
+  margin: 0 calc(-1 * var(--gouttiere));
+  padding: var(--s-2) var(--gouttiere) var(--s-5);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gouttiere);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.etagere-h::-webkit-scrollbar { display: none; }
+.etagere-h > li { scroll-snap-align: start; }
+
+/* ─── Ajoutés récemment : liste groupée façon iOS ─── */
+.accueil .liste-groupee {
+  margin: 0;
+  padding: 6px 0;
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+}
+
+.liste-groupee__item + .liste-groupee__item::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 0 var(--s-5) 0 calc(var(--s-5) + 44px + var(--s-3));
+  background: var(--c-line);
+}
+
+.liste-groupee__lien {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 64px;
+  padding: 10px var(--s-5);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition: background-color var(--d-1) var(--ease-out);
+}
+
+.liste-groupee__lien:hover { background: var(--c-bg-grouped); color: var(--c-ink); }
+.liste-groupee__lien:focus-visible { border-radius: var(--r-md); outline-offset: -2px; }
+.liste-groupee__item:first-child .liste-groupee__lien:hover { border-radius: var(--r-md) var(--r-md) 0 0; }
+.liste-groupee__item:last-child .liste-groupee__lien:hover { border-radius: 0 0 var(--r-md) var(--r-md); }
+
+.liste-groupee__texte { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.liste-groupee__titre { font: 600 1rem/1.3 var(--font-ui); }
+.liste-groupee__meta { color: var(--c-ink-3); font: var(--t-footnote); }
+.liste-groupee__type { flex: none; }
+.liste-groupee__chevron { flex: none; color: var(--c-ink-3); }
+
+.liste-groupee__fait {
+  display: none;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-xs);
+  box-shadow: inset 0 0 0 1.5px var(--c-hanko);
+  color: var(--c-hanko);
+  font: 700 13px/1 var(--font-kanji);
+  rotate: -8deg;
+}
+
+[data-statut="termine"] .liste-groupee__fait { display: inline-grid; }
+.liste-groupee__item:not([data-statut="termine"]) .liste-groupee__fait-sr { display: none; }
+
+@media (max-width: 599px) {
+  .liste-groupee__type { display: none; }
+  .liste-groupee__lien { padding-inline: var(--s-4); }
+  .liste-groupee__item + .liste-groupee__item::before { margin-left: calc(var(--s-4) + 44px + var(--s-3)); margin-right: var(--s-4); }
+}
+
+/* ─── Pied de page : vagues seigaiha 青海波 ─── */
+.accueil-pied {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  color: var(--c-ink-3);
+  font: var(--t-footnote);
+  text-align: center;
+}
+
+.accueil-pied__vagues {
+  display: block;
+  height: 48px;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='16' viewBox='0 0 32 16'%3E%3Cg fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M0 16a16 16 0 0 1 32 0M5 16a11 11 0 0 1 22 0M10 16a6 6 0 0 1 12 0'/%3E%3Cpath d='M-16 8a16 16 0 0 1 32 0M-11 8a11 11 0 0 1 22 0M-6 8a6 6 0 0 1 12 0'/%3E%3Cpath d='M16 8a16 16 0 0 1 32 0M21 8a11 11 0 0 1 22 0M26 8a6 6 0 0 1 12 0'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 32px 16px;
+}
+
+[data-theme="dark"] .accueil-pied__vagues { filter: invert(1); opacity: 0.07; }

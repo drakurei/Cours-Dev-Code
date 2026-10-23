@@ -1,0 +1,31 @@
+---
+/**
+ * Icônes fonctionnelles (trait 1,75 façon SF Symbols). Les kanji restent les icônes « de sens » ;
+ * celles-ci ne servent qu'aux actions (chercher, ouvrir, copier…). Toujours décoratives :
+ * le libellé est porté par le bouton ou le lien.
+ */
+import { ICONES, type NomIcone } from '../lib/icones.ts';
+
+interface Props {
+  nom: NomIcone;
+  taille?: number;
+  class?: string;
+}
+
+const { nom, taille = 20, class: classe } = Astro.props;
+---
+
+<svg
+  class:list={['icone', classe]}
+  width={taille}
+  height={taille}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.75"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  set:html={ICONES[nom]}
+/>

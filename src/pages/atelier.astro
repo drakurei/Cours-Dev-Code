@@ -1,0 +1,52 @@
+---
+/**
+ * /atelier/ — créer un cours (CONCEPTION §7) : Source → Générer → Vérifier → Publier.
+ * L'îlot React se monte dans <div id="atelier-app"> (client:only="react") ; il affiche
+ * l'état du brouillon dans #atelier-statut (en-tête de la page).
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import Atelier from '../islands/atelier/Atelier.tsx';
+import { KANJI_NAVIGATION } from '../lib/kanji.ts';
+import { toutesLesMatieres } from '../lib/matieres.ts';
+import { url } from '../lib/url.ts';
+
+const nav = KANJI_NAVIGATION.atelier;
+
+// Matières du site (liste de l'étape Source, prompt) et cours existants (prochain numéro hors ligne).
+const matieres = (await toutesLesMatieres()).map((m) => ({
+  slug: m.slug,
+  nom: m.nom,
+  kanji: m.kanji,
+  couleur: m.couleur,
+  lecture: m.lecture,
+  ordre: m.ordre,
+}));
+const coursParMatiere: Record<string, string[]> = {};
+for (const c of await getCollection('cours')) {
+  const [matiere, nom] = c.id.split('/');
+  if (matiere && nom) (coursParMatiere[matiere] ??= []).push(nom);
+}
+---
+
+<BaseLayout titre={nav.libelle} description="Créer un cours depuis un PDF, des images, du texte ou un repo GitHub." pageActive="atelier">
+  <EnTeteSection
+    niveau={1}
+    kanji={nav.kanji}
+    lecture={nav.lecture}
+    titre={nav.libelle}
+    sousTitre="Transforme un PDF, des images, des notes ou un repo en cours Manabi."
+  >
+    <div slot="actions" id="atelier-statut" class="atelier-statut"></div>
+  </EnTeteSection>
+  <div id="atelier-app" class="zone-app">
+    <Atelier client:only="react" matieres={matieres} coursParMatiere={coursParMatiere} urlReglages={url('/reglages/')} />
+    <noscript><p class="t-subhead t-secondaire">Cette page a besoin de JavaScript.</p></noscript>
+  </div>
+</BaseLayout>
+
+<style>
+  .zone-app { min-height: 40vh; }
+  .atelier-statut { min-height: var(--cible); display: flex; align-items: center; }
+</style>

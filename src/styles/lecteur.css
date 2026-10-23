@@ -1,0 +1,204 @@
+/*
+ * Manabi 学び — lecteur de cours (§5) : boutons « Écouter » et Mode Focus.
+ * Feuille globale chargée par src/layouts/CoursLayout.astro : le Mode Focus agit sur toute la page
+ * (<html data-focus>). Les composants du lecteur (src/components/lecteur/) gardent leurs propres styles.
+ */
+
+:root {
+  --focus-tete-h: 72px;
+  --focus-pied-h: 76px;
+  --focus-largeur: 47rem;
+}
+
+@media (max-width: 759px) {
+  :root {
+    --focus-tete-h: 60px;
+    --focus-pied-h: 116px;
+  }
+}
+
+/* Sections visées par le sommaire et J / K : arrivée sous la barre d'outils collante, comme les notions. */
+.lecteur__article > section[id] { scroll-margin-top: calc(var(--topbar-h) + var(--safe-top) + var(--s-4)); }
+
+/* ─── Boutons « Écouter » : haut-parleur ↔ arrêt ─── */
+button[data-ecouter] .ecouter__arret { display: none; }
+button[data-ecouter][data-etat-ecoute] .ecouter__parler { display: none; }
+button[data-ecouter][data-etat-ecoute] .ecouter__arret { display: block; }
+button[data-ecouter][data-etat-ecoute] { --btn-bg: color-mix(in srgb, var(--c-accent) 12%, transparent); }
+
+/* Bouton d'une notion : à droite de son titre ##. */
+.prose .notion[data-ecoute] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--s-3);
+}
+
+.prose .notion[data-ecoute] > * { grid-column: 1 / -1; min-width: 0; }
+.prose .notion[data-ecoute] > h2 { grid-column: 1; grid-row: 1; }
+
+.prose .notion[data-ecoute] > .lecteur-ecouter {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin: 0 calc(-1 * var(--s-3)) -6px 0;
+  font: 600 0.9375rem/1 var(--font-ui);
+}
+
+.prose .notion[data-ecoute] > .lecteur-ecouter + * { margin-top: 0.75em; }
+
+@media (max-width: 599px) {
+  .prose .notion[data-ecoute] > .lecteur-ecouter { width: var(--cible); padding: 0; margin-right: calc(-1 * var(--s-2)); }
+  .lecteur-ecouter__libelle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Titres focalisés par le lecteur (J/K, Mode Focus, sommaire) : pas d'anneau, ce ne sont pas des commandes. */
+[data-focus-cible]:focus { outline: none; }
+
+/* ═══════════════════════════ Mode Focus ═══════════════════════════ */
+
+/* Navigation, décor et tout ce qui n'est pas l'étape courante : masqués. */
+html[data-focus] .sidebar,
+html[data-focus] .topbar,
+html[data-focus] .tabbar,
+html[data-focus] .app > :not(.app__colonne),
+html[data-focus] .app__colonne > :not(main),
+html[data-focus] body > nav,
+html[data-focus] .petales,
+html[data-focus] .barre-lecture,
+html[data-focus] .lecteur > .sommaire,
+html[data-focus] .lecteur__article > :not([data-focus-hote]),
+html[data-focus] #contenu-cours > :not([data-focus-courante]),
+html[data-focus] .lecteur-ecouter,
+html[data-focus] .essentiel__ecouter {
+  display: none !important;
+}
+
+html[data-focus] body { background: var(--c-bg); }
+
+/* Minuteur flottant (< 1024 px) : il reste en Focus, juste au-dessus du pied (barre d'onglets masquée). */
+html[data-focus] .minuteur__flottant { bottom: calc(var(--focus-pied-h) + var(--safe-bottom) + var(--s-3)); }
+html[data-focus] .app { display: block; }
+
+html[data-focus] .app__contenu {
+  max-width: none;
+  padding:
+    calc(var(--focus-tete-h) + var(--safe-top) + var(--s-5))
+    calc(var(--s-6) + var(--safe-right))
+    calc(var(--focus-pied-h) + var(--safe-bottom) + var(--s-6))
+    calc(var(--s-6) + var(--safe-left));
+}
+
+html[data-focus] .lecteur { display: block; }
+
+/* Une colonne calme, centrée verticalement quand l'étape est courte. */
+html[data-focus] .lecteur__article {
+  display: grid;
+  align-content: center;
+  max-width: var(--focus-largeur);
+  min-height: calc(
+    100dvh - var(--focus-tete-h) - var(--focus-pied-h) - var(--safe-top) - var(--safe-bottom) - var(--s-5) - var(--s-6)
+  );
+  margin-inline: auto;
+}
+
+html[data-focus] .lecteur__article > [data-focus-hote] { max-width: none; margin: 0; }
+html[data-focus] #contenu-cours { font-size: 1.25rem; }
+
+/* ─── Notion ─── */
+html[data-focus] .notion[data-focus-courante] { display: block; }
+
+html[data-focus] .notion[data-focus-courante] > h2 {
+  font: 700 clamp(1.75rem, 1.1rem + 2.2vw, 2.5rem) / 1.15 var(--font-ui);
+  letter-spacing: -0.025em;
+}
+
+html[data-focus] .notion[data-focus-courante] > h2[data-focus-libelle]::before {
+  content: attr(data-focus-libelle);
+  margin-bottom: var(--s-3);
+  font: 600 0.8125rem/1.4 var(--font-ui);
+  letter-spacing: 0.06em;
+}
+
+html[data-focus] .notion[data-focus-courante] > * + * { margin-top: var(--s-3); }
+html[data-focus] .notion[data-focus-courante] > :is(h2 + *, .lecteur-ecouter + *) { margin-top: var(--s-6); }
+html[data-focus] .notion[data-focus-courante] > :is(p, ul, ol, h3, h4) { max-width: 40em; }
+html[data-focus] .notion[data-focus-courante] > h3 { margin-top: var(--s-6); }
+
+/* Blocs agrandis : kanji à gauche, libellé et texte à droite (comme la maquette Focus). */
+html[data-focus] [data-focus-courante] .bloc {
+  font-size: 1.3125rem;
+  line-height: 1.55;
+  border-radius: var(--r-lg);
+}
+
+@media (min-width: 600px) {
+  html[data-focus] [data-focus-courante] .bloc:not(.bloc--grand) {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: var(--s-4);
+    align-items: start;
+    padding: var(--s-4) var(--s-5) var(--s-5);
+  }
+
+  html[data-focus] [data-focus-courante] .bloc:not(.bloc--grand) > .bloc__tete { display: contents; }
+
+  html[data-focus] [data-focus-courante] .bloc:not(.bloc--grand) .bloc__tete .kanji {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    font-size: 1.25rem;
+  }
+
+  html[data-focus] [data-focus-courante] .bloc:not(.bloc--grand) .bloc__titre {
+    grid-column: 2;
+    color: var(--b-ink);
+    font: 600 0.75rem/1.35 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  html[data-focus] [data-focus-courante] .bloc:not(.bloc--grand) > .bloc__corps {
+    grid-column: 2;
+    margin-top: 2px;
+  }
+}
+
+html[data-focus] [data-focus-courante] .bloc + .bloc { margin-top: var(--s-3); }
+html[data-focus] [data-focus-courante] .astro-code,
+html[data-focus] [data-focus-courante] .code-brut { font-size: 1rem; }
+html[data-focus] [data-focus-courante] .bloc figure.code { margin-top: var(--s-3); }
+
+/* ─── L'essentiel ─── */
+html[data-focus] #essentiel[data-focus-courante] {
+  padding: var(--s-6) var(--s-7) var(--s-7);
+  border-radius: var(--r-xl);
+}
+
+html[data-focus] #essentiel[data-focus-courante] .bloc__tete { font-size: 1.0625rem; margin-bottom: var(--s-4); }
+html[data-focus] #essentiel[data-focus-courante] .bloc__tete .kanji { width: 40px; height: 40px; border-radius: 11px; font-size: 1.375rem; }
+
+html[data-focus] #essentiel[data-focus-courante] .bloc__corps {
+  font: 500 clamp(1.375rem, 1.05rem + 1.1vw, 1.75rem) / 1.5 var(--font-read);
+  letter-spacing: -0.005em;
+}
+
+/* ─── Petits écrans ─── */
+@media (max-width: 599px) {
+  html[data-focus] .app__contenu {
+    padding-inline: calc(var(--s-4) + var(--safe-left)) calc(var(--s-4) + var(--safe-right));
+    padding-top: calc(var(--focus-tete-h) + var(--safe-top) + var(--s-3));
+  }
+
+  html[data-focus] #contenu-cours { font-size: 1.125rem; }
+  html[data-focus] [data-focus-courante] .bloc { font-size: 1.1875rem; }
+  html[data-focus] #essentiel[data-focus-courante] { padding: var(--s-5); }
+}

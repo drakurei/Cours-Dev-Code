@@ -1,0 +1,280 @@
+---
+/**
+ * / — Aujourd'hui. UNE mission du jour, le reste en dessous, calme.
+ *
+ * Zones (ids stables) :
+ *   #salutation       おはよう / こんにちは / こんばんは + date (script en ligne : pas de clignotement)
+ *   #stats-jour       série 連, pétales 花びら, record ([data-compteur], src/scripts/progression.ts)
+ *   #mission-du-jour  îlot MissionDuJour : réviser / continuer / commencer / bravo
+ *   #reprendre        îlot Reprendre : 3 derniers cours ouverts non terminés
+ *   #revisions-dues   îlot Revisions : à revoir, nouvelles, demain
+ *   #minuteur-rapide  îlot MinuteurRapide : 10 / 15 / 25 min → « manabi:minuteur »
+ *   #tomes            étagère horizontale des tomes
+ *   #recents          ajoutés récemment
+ *
+ * Données pour les îlots (lues dans le DOM, une fois) :
+ *   script#ordre-de-lecture  [{id, url, titre, chapitre, matiere, duree, essentiel, kanji, couleur, notions[]}]
+ *   script#cartes-accueil    [carteId…] toutes les flashcards publiées, dans l'ordre de lecture
+ *
+ * Les îlots sont en client:only (l'état vit dans localStorage) : chaque zone a un squelette
+ * de même hauteur, pour qu'aucun contenu ne saute à l'affichage.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TomeCouverture from '../components/TomeCouverture.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import EtatVide from '../components/EtatVide.astro';
+import Icone from '../components/Icone.astro';
+import Kanji from '../components/Kanji.astro';
+import MissionDuJour from '../islands/accueil/MissionDuJour.tsx';
+import Reprendre from '../islands/accueil/Reprendre.tsx';
+import Revisions from '../islands/accueil/Revisions.tsx';
+import MinuteurRapide from '../islands/accueil/MinuteurRapide.tsx';
+import '../islands/accueil/accueil.css';
+import { coursRecents, preparerCours, regrouperEnTomes, sectionsDuCours } from '../lib/cours.ts';
+import { KANJI_NAVIGATION, MOTS_JAPONAIS } from '../lib/kanji.ts';
+import { formaterDate, TYPES_LIBELLES } from '../lib/libelles.ts';
+import { idCarte, pluriel } from '../lib/texte.ts';
+import { PREFS_DEFAUT } from '../lib/store.ts';
+import { url } from '../lib/url.ts';
+import { getCollection, render } from 'astro:content';
+
+const [entrees, matieres] = await Promise.all([getCollection('cours'), getCollection('matieres')]);
+const cours = preparerCours(entrees, matieres);
+const tomes = regrouperEnTomes(cours, matieres).filter((t) => t.cours.length > 0);
+const recents = coursRecents(cours, 4);
+const premier = cours[0];
+
+// Notions (##) de chaque cours : « k / n notions » et l'ensō de « Reprendre ».
+const notions = await Promise.all(cours.map(async (c) => sectionsDuCours((await render(c.entree)).headings).map((s) => s.id)));
+
+// Ordre de lecture complet (tomes puis chapitres) : la mission choisit dedans.
+const ordre = cours.map((c, i) => ({
+  id: c.id,
+  url: c.url,
+  titre: c.data.titre,
+  chapitre: c.chapitre,
+  matiere: c.matiere.nom,
+  duree: c.duree,
+  essentiel: c.data.essentiel,
+  kanji: c.matiere.kanji,
+  couleur: c.matiere.couleur,
+  notions: notions[i] ?? [],
+}));
+
+// Toutes les cartes, dans l'ordre de lecture (même id que le store et /donnees/cartes.json).
+const cartes = [...new Set(cours.flatMap((c) => c.data.flashcards.map((f) => idCarte(c.id, f.q))))];
+
+const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
+const minuteurDefaut = [10, 15, 25].includes(PREFS_DEFAUT.minuteur) ? PREFS_DEFAUT.minuteur : 15;
+const salutations = { matin: MOTS_JAPONAIS.bonjourMatin, jour: MOTS_JAPONAIS.bonjour, soir: MOTS_JAPONAIS.bonsoir };
+---
+
+<BaseLayout titre={KANJI_NAVIGATION.aujourdhui.libelle} pageActive="aujourdhui" petales>
+  <div class="accueil">
+    <header class="accueil-tete" id="salutation">
+      <div class="accueil-tete__texte">
+        <p class="accueil-tete__date" data-date-du-jour>&nbsp;</p>
+        <h1 class="accueil-tete__titre" data-grand-titre>
+          <span class="accueil-tete__jp" lang="ja" data-salutation-jp>{MOTS_JAPONAIS.bonjour}</span>, Jonathan
+        </h1>
+      </div>
+      <ul class="stats-jour" id="stats-jour" role="list" aria-label="Ta régularité">
+        <li class="stat" title="Jours d’affilée avec au moins une action">
+          <span class="stat__kanji" lang="ja" aria-hidden="true">{MOTS_JAPONAIS.serie}</span>
+          <span><span class="stat__valeur" data-compteur="serie">0</span>{' '}<span data-libelle-compteur="serie" data-singulier="jour" data-pluriel="jours">jour</span><span class="sr-only"> de suite</span></span>
+        </li>
+        <li class="stat" title="Pétales gagnés en apprenant">
+          <span class="stat__kanji" lang="ja" aria-hidden="true">{MOTS_JAPONAIS.petales}</span>
+          <span><span class="stat__valeur" data-compteur="petales">0</span>{' '}<span class="sr-only" data-libelle-compteur="petales" data-singulier="pétale" data-pluriel="pétales">pétale</span></span>
+        </li>
+        <li class="stat stat--discret" title="Ta plus longue série">
+          <span>Record{' '}<span class="stat__valeur" data-compteur="record">0</span>{' '}<span data-libelle-compteur="record" data-singulier="jour" data-pluriel="jours">jour</span></span>
+        </li>
+      </ul>
+    </header>
+
+    <!-- Salutation selon l'heure et date du jour, AVANT le premier affichage. -->
+    <script is:inline define:vars={{ salutations }}>
+      (function () {
+        var maintenant = new Date();
+        var h = maintenant.getHours();
+        var jp = document.querySelector('[data-salutation-jp]');
+        if (jp) jp.textContent = h < 12 ? salutations.matin : h < 18 ? salutations.jour : salutations.soir;
+        var date = document.querySelector('[data-date-du-jour]');
+        if (date) {
+          var texte = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(maintenant);
+          date.textContent = texte.charAt(0).toUpperCase() + texte.slice(1);
+        }
+      })();
+    </script>
+
+    <!-- Mission du jour : une seule action principale. -->
+    <section class="mission" id="mission-du-jour" aria-labelledby="mission-titre">
+      {
+        premier ? (
+          <MissionDuJour client:only="react">
+            <div slot="fallback" class="mission-carte mission-carte--attente" data-couleur={premier.matiere.couleur}>
+              <div class="mission-carte__texte">
+                <p class="mission-carte__surtitre" id="mission-titre">
+                  <span class="badge-kanji badge-kanji--sm" lang="ja" aria-hidden="true">今</span>
+                  Mission du jour
+                </p>
+                <span class="squelette squelette--titre" aria-hidden="true" />
+                <span class="squelette squelette--meta" aria-hidden="true" />
+                <span class="squelette squelette--ligne" aria-hidden="true" />
+                <span class="squelette squelette--ligne squelette--court" aria-hidden="true" />
+                <span class="squelette squelette--bouton" aria-hidden="true" />
+              </div>
+              <div class="mission-carte__visuel" aria-hidden="true">
+                <div class="mission-pile">
+                  <span class="mission-pile__carte mission-pile__carte--3" />
+                  <span class="mission-pile__carte mission-pile__carte--2" />
+                  <span class="mission-pile__carte mission-pile__carte--1" />
+                </div>
+              </div>
+            </div>
+          </MissionDuJour>
+        ) : (
+          <EtatVide kanji="学" titre="Ta première mission : créer un cours" texte="Colle tes notes dans l’Atelier ou dans n’importe quelle IA avec le prompt universel.">
+            <a class="btn btn--primaire" href={url('/atelier/')}>Ouvrir l’Atelier</a>
+          </EtatVide>
+        )
+      }
+    </section>
+
+    <!-- Tableau du jour : reprendre, réviser, se concentrer. -->
+    <div class="tableau-jour">
+      <div class="tableau-jour__grille">
+        <section class="tuile tuile--reprendre" id="reprendre" aria-labelledby="reprendre-titre">
+          <header class="tuile__tete">
+            <h2 class="tuile__titre" id="reprendre-titre">Reprendre</h2>
+            <a class="tuile__lien" href={url('/tomes/')}>Tout voir</a>
+          </header>
+          <Reprendre client:only="react">
+            <ul slot="fallback" class="reprendre reprendre--attente" role="list" aria-hidden="true">
+              {
+                [0, 1, 2].map(() => (
+                  <li class="reprendre__item">
+                    <span class="ligne-cours">
+                      <span class="squelette squelette--rond" />
+                      <span class="ligne-cours__texte">
+                        <span class="squelette squelette--ligne" />
+                        <span class="squelette squelette--ligne squelette--court" />
+                      </span>
+                    </span>
+                  </li>
+                ))
+              }
+            </ul>
+          </Reprendre>
+        </section>
+
+        <section class="tuile tuile--revisions" id="revisions-dues" aria-labelledby="revisions-titre">
+          <header class="tuile__tete">
+            <h2 class="tuile__titre" id="revisions-titre">Révisions</h2>
+            <a class="tuile__lien" href={url('/reviser/')}>
+              <span class="tuile__kanji" lang="ja" aria-hidden="true">{KANJI_NAVIGATION.reviser.kanji}</span>
+              Réviser
+            </a>
+          </header>
+          <Revisions client:only="react">
+            <div slot="fallback" class="revisions revisions--attente" aria-hidden="true">
+              <div class="revisions__enso"><span class="squelette squelette--enso" /></div>
+              <div class="revisions__liste">
+                <span class="squelette squelette--ligne" />
+                <span class="squelette squelette--ligne squelette--court" />
+              </div>
+              <span class="squelette squelette--ligne squelette--court revisions__demain" />
+            </div>
+          </Revisions>
+        </section>
+
+        <section class="tuile tuile--minuteur" id="minuteur-rapide" aria-labelledby="minuteur-titre">
+          <header class="tuile__tete">
+            <h2 class="tuile__titre" id="minuteur-titre">Minuteur focus</h2>
+            <Icone nom="horloge" taille={18} class="tuile__icone" />
+          </header>
+          <MinuteurRapide client:only="react">
+            <div slot="fallback" class="minuteur-rapide" data-etat="pret" aria-hidden="true">
+              <div class="minuteur-rapide__ligne">
+                <p class="minuteur-rapide__temps">{minuteurDefaut}:00</p>
+              </div>
+              <div class="segments">
+                {
+                  [10, 15, 25].map((d) => (
+                    <span class="segments__option" data-choisi={d === minuteurDefaut ? '' : undefined}>
+                      <span class="segments__libelle">{d} min</span>
+                    </span>
+                  ))
+                }
+              </div>
+              <div class="minuteur-rapide__actions">
+                <span class="btn btn--secondaire minuteur-rapide__principal">
+                  <Icone nom="lecture" taille={16} />
+                  Lancer
+                </span>
+              </div>
+            </div>
+          </MinuteurRapide>
+        </section>
+      </div>
+    </div>
+
+    {
+      tomes.length > 0 && (
+        <section class="accueil-section" id="tomes" aria-labelledby="tomes-titre">
+          <EnTeteSection niveau={2} kanji={KANJI_NAVIGATION.tomes.kanji} titre="Tomes" id="tomes-titre" sousTitre={pluriel(tomes.length, 'tome')}>
+            <a slot="actions" class="btn btn--discret" href={url('/tomes/')}>Tout voir</a>
+          </EnTeteSection>
+          <ul class="etagere-h" role="list">
+            {tomes.map((t) => (
+              <li>
+                <TomeCouverture matiere={t.matiere} ids={t.cours.map((c) => c.id)} taille="petite" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      recents.length > 0 && (
+        <section class="accueil-section" id="recents" aria-labelledby="recents-titre">
+          <EnTeteSection niveau={2} kanji={MOTS_JAPONAIS.recents} lecture="shin — nouveau" titre="Ajoutés récemment" id="recents-titre" />
+          <ul class="liste-groupee" role="list">
+            {recents.map((c) => (
+              <li class="liste-groupee__item" data-couleur={c.matiere.couleur} data-statut-cours={c.id} data-statut="a-lire">
+                <a class="liste-groupee__lien" href={c.url}>
+                  <Kanji kanji={c.matiere.kanji} lecture={c.matiere.lecture} taille="lg" couleur={c.matiere.couleur} />
+                  <span class="liste-groupee__texte">
+                    <span class="liste-groupee__titre">{c.data.titre}</span>
+                    <span class="liste-groupee__meta">
+                      {c.matiere.nom} ·{' '}
+                      <span lang="ja" aria-hidden="true">第{c.chapitre}話</span>
+                      <span class="sr-only">chapitre {c.chapitre}</span>
+                      {c.data.date && ` · ajouté le ${formaterDate(c.data.date).replace(/ /g, ' ')}`}
+                    </span>
+                  </span>
+                  <span class="liste-groupee__fait" lang="ja" aria-hidden="true">済</span>
+                  <span class="sr-only liste-groupee__fait-sr">, terminé</span>
+                  <span class="puce liste-groupee__type">{TYPES_LIBELLES[c.data.type]}</span>
+                  <Icone nom="chevron-droite" taille={16} class="liste-groupee__chevron" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <footer class="accueil-pied">
+      <span class="accueil-pied__vagues" aria-hidden="true"></span>
+      <p>
+        Manabi <span lang="ja">{MOTS_JAPONAIS.logo}</span> · mis à jour à chaque push · disponible hors-ligne
+      </p>
+    </footer>
+  </div>
+
+  <script type="application/json" id="ordre-de-lecture" set:html={json(ordre)} />
+  <script type="application/json" id="cartes-accueil" set:html={json(cartes)} />
+</BaseLayout>

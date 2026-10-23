@@ -1,0 +1,117 @@
+---
+/**
+ * Carte d'un cours : tome (couleur + kanji), 第N話, titre, l'essentiel en deux lignes, méta.
+ * Statut posé par src/scripts/progression.ts (data-statut-cours → data-statut).
+ */
+import type { CoursVue } from '../lib/cours.ts';
+import { NIVEAUX_LIBELLES, TYPES_LIBELLES } from '../lib/libelles.ts';
+import Kanji from './Kanji.astro';
+
+interface Props {
+  cours: CoursVue;
+  /** Affiche la matière (inutile sur la page d'un tome). */
+  afficherMatiere?: boolean;
+  /** Niveau du titre dans la page (h2 ou h3). */
+  niveauTitre?: 2 | 3;
+  class?: string;
+}
+
+const { cours, afficherMatiere = true, niveauTitre = 3, class: classe } = Astro.props;
+const Titre = `h${niveauTitre}` as 'h2' | 'h3';
+const { matiere } = cours;
+---
+
+<article
+  class:list={['carte', 'carte--interactive', 'carte-cours', classe]}
+  data-couleur={matiere.couleur}
+  data-statut-cours={cours.id}
+  data-statut="a-lire"
+>
+  <div class="carte-cours__tete">
+    {
+      afficherMatiere && (
+        <span class="carte-cours__matiere">
+          <Kanji kanji={matiere.kanji} lecture={matiere.lecture} taille="xs" couleur={matiere.couleur} />
+          {matiere.nom}
+        </span>
+      )
+    }
+    <span class="carte-cours__episode"><span lang="ja" aria-hidden="true">第{cours.chapitre}話</span><span class="sr-only">Chapitre {cours.chapitre}</span></span>
+    <span class="carte-cours__fait" lang="ja" aria-hidden="true" title="Terminé">済</span>
+  </div>
+  <Titre class="carte-cours__titre">
+    <a class="carte__lien" href={cours.url}>{cours.data.titre}</a>
+  </Titre>
+  <p class="carte-cours__essentiel">{cours.data.essentiel}</p>
+  <p class="carte-cours__meta">
+    {cours.duree} min · {NIVEAUX_LIBELLES[cours.data.niveau]}
+    {cours.data.type !== 'cours' && ` · ${TYPES_LIBELLES[cours.data.type]}`}
+    <span class="sr-only carte-cours__statut-sr">, terminé</span>
+  </p>
+</article>
+
+<style>
+  .carte-cours {
+    display: grid;
+    align-content: start;
+    gap: var(--s-2);
+    padding: var(--s-4) var(--s-5) var(--s-5);
+    overflow: hidden;
+  }
+
+  /* Liseré de la couleur du tome, en haut. */
+  .carte-cours::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: var(--couleur);
+    opacity: 0.85;
+  }
+
+  .carte-cours__tete {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: 24px;
+    color: var(--c-ink-3);
+    font: var(--t-footnote);
+  }
+
+  .carte-cours__matiere { display: inline-flex; align-items: center; gap: 6px; color: var(--couleur-ink); font-weight: 600; }
+  .carte-cours__episode { font-family: var(--font-kanji); font-weight: 600; }
+
+  .carte-cours__fait {
+    display: none;
+    margin-left: auto;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1.5px var(--c-hanko);
+    color: var(--c-hanko);
+    font: 700 13px/1 var(--font-kanji);
+    rotate: -8deg;
+  }
+
+  .carte-cours[data-statut="termine"] .carte-cours__fait { display: inline-grid; }
+  .carte-cours:not([data-statut="termine"]) .carte-cours__statut-sr { display: none; }
+
+  .carte-cours__titre {
+    font: var(--t-headline);
+    letter-spacing: var(--t-headline-track);
+    font-size: 1.125rem;
+  }
+
+  .carte-cours__essentiel {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    color: var(--c-ink-2);
+    font: var(--t-subhead);
+  }
+
+  .carte-cours__meta { color: var(--c-ink-3); font: var(--t-footnote); margin-top: var(--s-1); }
+</style>

@@ -1,0 +1,87 @@
+---
+/**
+ * Barre du haut (< 1024 px), matériau verre : fleur (accueil), titre compact, recherche.
+ * Grand titre façon iOS : le titre compact apparaît quand le [data-grand-titre] de la page
+ * sort de l'écran.
+ */
+import Logo from './Logo.astro';
+import Icone from './Icone.astro';
+import { url } from '../lib/url.ts';
+
+interface Props {
+  titre: string;
+}
+
+const { titre } = Astro.props;
+---
+
+<header class="topbar verre" data-topbar>
+  <a class="topbar__accueil" href={url('/')} aria-label="Manabi, retour à Aujourd’hui">
+    <Logo avecTexte={false} taille={26} />
+  </a>
+  <p class="topbar__titre" aria-hidden="true">{titre}</p>
+  <button class="btn btn--icone topbar__recherche" type="button" data-action="recherche" aria-label="Rechercher">
+    <Icone nom="recherche" taille={21} />
+  </button>
+</header>
+
+<script>
+  const barre = document.querySelector<HTMLElement>('[data-topbar]');
+  const grand = document.querySelector('[data-grand-titre]');
+  if (barre && grand && 'IntersectionObserver' in window) {
+    new IntersectionObserver(
+      ([e]) => barre.toggleAttribute('data-compact', !!e && !e.isIntersecting && e.boundingClientRect.top < 60),
+      { rootMargin: '-56px 0px 0px 0px' },
+    ).observe(grand);
+  } else if (barre) {
+    barre.setAttribute('data-compact', '');
+  }
+</script>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    display: grid;
+    grid-template-columns: var(--cible) 1fr var(--cible);
+    align-items: center;
+    gap: var(--s-2);
+    min-height: calc(var(--topbar-h) + var(--safe-top));
+    padding: var(--safe-top) calc(var(--s-2) + var(--safe-right)) 0 calc(var(--s-2) + var(--safe-left));
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--d-2) var(--ease-out);
+  }
+
+  .topbar[data-compact] { border-bottom-color: var(--c-line); }
+
+  .topbar__accueil {
+    display: grid;
+    place-items: center;
+    width: var(--cible);
+    height: var(--cible);
+    border-radius: var(--r-full);
+  }
+
+  .topbar__titre {
+    overflow: hidden;
+    color: var(--c-ink);
+    font: var(--t-headline);
+    letter-spacing: var(--t-headline-track);
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity var(--d-2) var(--ease-out), transform var(--d-2) var(--ease-out);
+  }
+
+  .topbar[data-compact] .topbar__titre { opacity: 1; transform: none; }
+
+  .topbar__recherche { --btn-bg: transparent; --btn-ink: var(--c-accent); }
+  .topbar__recherche:hover { --btn-bg: color-mix(in srgb, var(--c-accent) 9%, transparent); }
+
+  @media (min-width: 1024px) {
+    .topbar { display: none; }
+  }
+</style>

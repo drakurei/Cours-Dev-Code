@@ -1,0 +1,75 @@
+---
+/**
+ * /tomes/ — toutes les matières en couvertures de tomes manga.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import EnTeteSection from '../../components/EnTeteSection.astro';
+import TomeCouverture from '../../components/TomeCouverture.astro';
+import EtatVide from '../../components/EtatVide.astro';
+import { tomesPublies } from '../../lib/cours.ts';
+import { KANJI_NAVIGATION } from '../../lib/kanji.ts';
+import { pluriel } from '../../lib/texte.ts';
+import { url } from '../../lib/url.ts';
+
+const tomes = await tomesPublies();
+const nbCours = tomes.reduce((n, t) => n + t.cours.length, 0);
+const nav = KANJI_NAVIGATION.tomes;
+---
+
+<BaseLayout titre="Tomes" description="Toutes les matières de Manabi, rangées comme des tomes de manga." pageActive="tomes">
+  <EnTeteSection
+    niveau={1}
+    kanji={nav.kanji}
+    lecture={nav.lecture}
+    titre="Tomes"
+    sousTitre={tomes.length ? `${pluriel(tomes.length, 'tome')}, ${pluriel(nbCours, 'épisode')}. Choisis un tome, lis un épisode.` : undefined}
+  />
+
+  {
+    tomes.length ? (
+      <ul class="etagere" role="list">
+        {tomes.map((t) => (
+          <li class="etagere__item">
+            <TomeCouverture matiere={t.matiere} ids={t.cours.map((c) => c.id)} />
+            {t.matiere.description && <p class="etagere__description">{t.matiere.description}</p>}
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <EtatVide kanji="巻" titre="Aucun tome pour l’instant" texte="Crée ton premier cours dans l’Atelier : son tome apparaîtra ici.">
+        <a class="btn btn--primaire" href={url('/atelier/')}>Ouvrir l’Atelier</a>
+      </EtatVide>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .etagere {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+    gap: var(--s-7) var(--s-5);
+    margin: 0;
+    padding: 0;
+  }
+
+  .etagere__item {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: var(--s-3);
+  }
+
+  .etagere__description {
+    max-width: 176px;
+    color: var(--c-ink-3);
+    font: var(--t-footnote);
+    text-align: center;
+  }
+
+  @media (max-width: 599px) {
+    .etagere { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6) var(--s-4); }
+    /* 2 colonnes : largeur en vw (une longueur, utilisable pour la taille du kanji). */
+    .etagere__item :global(.tome) { --largeur: min(176px, calc((100vw - 3 * var(--s-4)) / 2)); }
+    .etagere__description { display: none; }
+  }
+</style>

@@ -1,0 +1,353 @@
+/*
+ * Manabi 学び — blocs colorés (§2.2), badges kanji, code Shiki, documents PDF.
+ * Un bloc = <aside class="bloc bloc--NOM" data-bloc="NOM"> (src/lib/markdown/directives.ts).
+ */
+
+/* ─── Badge kanji ─── */
+.badge-kanji {
+  --badge-bg: var(--c-accent-soft);
+  --badge-ink: var(--c-accent-ink);
+  --badge-taille: 32px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--badge-taille);
+  height: var(--badge-taille);
+  border-radius: calc(var(--badge-taille) * 0.28);
+  background: var(--badge-bg);
+  color: var(--badge-ink);
+  font-family: var(--font-kanji);
+  font-size: calc(var(--badge-taille) * 0.56);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.badge-kanji--xs { --badge-taille: 20px; }
+.badge-kanji--sm { --badge-taille: 26px; }
+.badge-kanji--md { --badge-taille: 32px; }
+.badge-kanji--lg { --badge-taille: 44px; }
+.badge-kanji--xl { --badge-taille: 64px; }
+
+.badge-kanji--plein { --badge-bg: var(--c-accent); --badge-ink: var(--c-on-accent); }
+.badge-kanji--nu { --badge-bg: transparent; }
+[data-couleur].badge-kanji { --badge-bg: var(--couleur-soft); --badge-ink: var(--couleur); }
+[data-couleur].badge-kanji--plein { --badge-bg: var(--couleur); --badge-ink: var(--c-surface); }
+
+/* ─── Blocs ─── */
+.bloc {
+  --b-bg: var(--b-info-bg);
+  --b-ink: var(--b-info-ink);
+  --b-accent: var(--b-info-accent);
+  position: relative;
+  border-radius: var(--r-md);
+  background: var(--b-bg);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  font: var(--t-read);
+  font-size: 1.0625rem;
+}
+
+.bloc--essentiel { --b-bg: var(--b-essentiel-bg); --b-ink: var(--b-essentiel-ink); --b-accent: var(--b-essentiel-accent); }
+.bloc--quoi { --b-bg: var(--b-quoi-bg); --b-ink: var(--b-quoi-ink); --b-accent: var(--b-quoi-accent); }
+.bloc--exemple { --b-bg: var(--b-exemple-bg); --b-ink: var(--b-exemple-ink); --b-accent: var(--b-exemple-accent); }
+.bloc--piege { --b-bg: var(--b-piege-bg); --b-ink: var(--b-piege-ink); --b-accent: var(--b-piege-accent); }
+.bloc--ou { --b-bg: var(--b-ou-bg); --b-ink: var(--b-ou-ink); --b-accent: var(--b-ou-accent); }
+.bloc--astuce { --b-bg: var(--b-astuce-bg); --b-ink: var(--b-astuce-ink); --b-accent: var(--b-astuce-accent); }
+.bloc--definition { --b-bg: var(--b-definition-bg); --b-ink: var(--b-definition-ink); --b-accent: var(--b-definition-accent); }
+.bloc--info { --b-bg: var(--b-info-bg); --b-ink: var(--b-info-ink); --b-accent: var(--b-info-accent); }
+.bloc--retenir { --b-bg: var(--b-retenir-bg); --b-ink: var(--b-retenir-ink); --b-accent: var(--b-retenir-accent); }
+.bloc--attention { --b-bg: var(--b-attention-bg); --b-ink: var(--b-attention-ink); --b-accent: var(--b-attention-accent); }
+
+/* Attention = piège, avec un liseré pour le distinguer d'un coup d'œil. */
+.bloc--attention { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--b-accent) 45%, transparent); }
+
+.bloc__tete {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-2);
+  color: var(--b-ink);
+  font: 600 0.9375rem/1.3 var(--font-ui);
+  letter-spacing: 0.005em;
+}
+
+.bloc__tete .kanji {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--b-accent);
+  color: var(--b-bg);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bloc__titre { font-style: normal; }
+.bloc__titre em { font-style: italic; }
+
+.bloc__corps > * + * { margin-top: 0.75em; }
+.bloc__corps strong { color: var(--b-ink); }
+.bloc__corps :not(pre) > code { background: color-mix(in srgb, var(--b-accent) 12%, var(--c-surface)); }
+.bloc__corps ul,
+.bloc__corps ol { padding-left: 1.3em; }
+.bloc__corps ul > li::marker { color: var(--b-accent); }
+
+.prose .bloc + .bloc { margin-top: var(--s-3); }
+
+/* Grand bloc « L'essentiel en 30 s » (lecteur). */
+.bloc--grand {
+  padding: var(--s-5) var(--s-6) var(--s-6);
+  border-radius: var(--r-lg);
+}
+
+.bloc--grand .bloc__tete { font-size: 1rem; margin-bottom: var(--s-3); }
+.bloc--grand .bloc__tete .kanji { width: 32px; height: 32px; border-radius: 9px; font-size: 19px; }
+.bloc--grand .bloc__corps { font: 500 1.25rem/1.55 var(--font-read); color: var(--c-ink); }
+
+@media (max-width: 599px) {
+  .bloc { padding: var(--s-4); }
+  .bloc--grand { padding: var(--s-5); }
+  .bloc--grand .bloc__corps { font-size: 1.125rem; }
+}
+
+/* ─── Blocs de code (Shiki, Rosé Pine Dawn / Moon) ─── */
+figure.code {
+  position: relative;
+  margin-inline: 0;
+  border-radius: var(--r-md);
+  background: var(--code-bg);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  overflow: hidden;
+}
+
+.bloc figure.code { box-shadow: none; }
+
+.code__titre {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 38px;
+  padding: 0 calc(var(--s-4) + 72px) 0 var(--s-4);
+  background: var(--code-surface);
+  color: var(--code-texte-2);
+  font: 500 0.8125rem/1.2 var(--font-mono);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.astro-code,
+.code-brut {
+  margin: 0;
+  padding: var(--s-4) 0;
+  border-radius: 0;
+  background-color: var(--code-bg);
+  color: var(--code-texte);
+  font: 400 0.875rem/1.65 var(--font-mono);
+  font-variant-ligatures: none;
+  tab-size: 2;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.astro-code code,
+.code-brut code {
+  display: inline-block;
+  min-width: 100%;
+  padding: 0;
+  font: inherit;
+  background: none;
+}
+
+.code-brut code { padding-inline: var(--s-4); white-space: pre; }
+
+/* Ligne pleine largeur pour le surlignage et le diff. */
+.astro-code .line {
+  display: inline-block;
+  width: 100%;
+  padding-inline: var(--s-4);
+}
+
+.astro-code .line.highlighted {
+  background: var(--code-surligne);
+  box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.astro-code.has-diff .line { position: relative; padding-left: calc(var(--s-4) + 1.1em); }
+.astro-code .line.diff.add { background: var(--code-ajout); }
+.astro-code .line.diff.remove { background: var(--code-retrait); opacity: 0.8; }
+.astro-code .line.diff.add::before,
+.astro-code .line.diff.remove::before {
+  position: absolute;
+  left: var(--s-4);
+  font-weight: 700;
+}
+.astro-code .line.diff.add::before { content: "+"; color: var(--b-exemple-accent); }
+.astro-code .line.diff.remove::before { content: "−"; color: var(--b-piege-accent); }
+
+/* Bascule des couleurs Shiki en thème sombre (variables --shiki-dark générées au build). */
+[data-theme="dark"] .astro-code {
+  background-color: var(--shiki-dark-bg, var(--code-bg)) !important;
+  color: var(--shiki-dark, var(--code-texte)) !important;
+}
+
+[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
+}
+
+/* Styles de police des jetons (italique…), exposés en variables par Shiki pour chaque thème. */
+.astro-code span { font-style: var(--shiki-light-font-style, inherit); font-weight: var(--shiki-light-font-weight, inherit); }
+[data-theme="dark"] .astro-code span { font-style: var(--shiki-dark-font-style, inherit); font-weight: var(--shiki-dark-font-weight, inherit); }
+
+/* Bouton « Copier » (ajouté par src/scripts/code.ts). */
+.code__copier {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--code-surface) 86%, transparent);
+  color: var(--code-texte-2);
+  font: 500 0.75rem/1 var(--font-ui);
+  opacity: 0;
+  transition: opacity var(--d-2) var(--ease-out), color var(--d-1) var(--ease-out), background-color var(--d-1) var(--ease-out);
+}
+
+/* Zone tactile de 44 px autour du petit bouton. */
+.code__copier::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
+
+.code__copier svg { width: 14px; height: 14px; }
+.code__copier:hover { color: var(--code-texte); background: var(--code-surface); }
+.code__copier[data-etat="copie"] { color: var(--b-exemple-accent); opacity: 1; }
+
+figure.code:hover .code__copier,
+figure.code:focus-within .code__copier,
+.code__copier:focus-visible { opacity: 1; }
+
+@media (hover: none) {
+  .code__copier { opacity: 1; }
+}
+
+/* ─── Document PDF ─── */
+.doc-pdf {
+  margin-inline: 0;
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  box-shadow: var(--sh-1), inset 0 0 0 1px var(--c-line);
+  overflow: hidden;
+}
+
+.doc-pdf__vue {
+  display: block;
+  width: 100%;
+  height: min(72vh, 720px);
+  border: 0;
+  background: var(--c-bg-grouped);
+}
+
+.doc-pdf__repli {
+  display: grid;
+  place-content: center;
+  gap: var(--s-2);
+  height: 100%;
+  min-height: 160px;
+  padding: var(--s-5);
+  color: var(--c-ink-2);
+  font: var(--t-callout);
+  text-align: center;
+}
+
+.doc-pdf__legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4);
+  border-top: 1px solid var(--c-line);
+  font: var(--t-subhead);
+}
+
+.doc-pdf__titre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--c-ink);
+  font-weight: 600;
+}
+
+.doc-pdf__titre .kanji {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--b-definition-bg);
+  color: var(--b-definition-accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.doc-pdf__ouvrir {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible);
+  padding: 0 var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--c-accent-soft);
+  color: var(--c-accent-ink);
+  font: var(--t-headline);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.doc-pdf__ouvrir:hover { color: var(--c-accent-ink); background: color-mix(in oklab, var(--c-accent-soft) 86%, var(--c-accent)); }
+
+/* ─── Dépliants « aide » (indices, solution, réponse) ─── */
+details.aide > summary { list-style: none; cursor: pointer; }
+details.aide > summary::-webkit-details-marker { display: none; }
+
+.aide { margin: 0; }
+
+.aide > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--cible);
+  padding: 0 var(--s-4);
+  border-radius: var(--r-full);
+  background: var(--c-bg-grouped);
+  color: var(--c-ink);
+  font: var(--t-headline);
+  font-size: 0.9375rem;
+  transition: background-color var(--d-1) var(--ease-out);
+}
+
+.aide > summary::before { content: "+"; color: var(--c-accent); font-weight: 700; }
+.aide[open] > summary::before { content: "−"; }
+.aide > summary:hover { background: color-mix(in srgb, var(--c-bg-grouped) 70%, var(--c-line-strong)); }
+.aide--solution > summary { background: var(--c-accent-soft); color: var(--c-accent-ink); }
+
+.aide__corps {
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-2);
+  box-shadow: inset 0 0 0 1px var(--c-line);
+  font: var(--t-callout);
+}
+
+.aide__corps > * + * { margin-top: var(--s-2); }
+
+/* Un indice emboîté s'aligne sous le précédent, sans décalage. */
+.aide .aide { margin-top: 0; }

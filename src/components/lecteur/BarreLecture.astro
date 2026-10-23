@@ -1,0 +1,53 @@
+---
+/**
+ * Barre de progression de lecture : fine, collée en haut (sous la barre du haut sur mobile).
+ * Cachée sans JavaScript ; mise à jour par src/scripts/lecteur/barre.ts (--progression, aria-valuenow).
+ */
+---
+
+<div
+  class="barre-lecture"
+  data-barre-lecture
+  role="progressbar"
+  aria-label="Progression de lecture"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow="0"
+  aria-valuetext="0 % lu"
+  hidden
+>
+  <span class="barre-lecture__remplissage"></span>
+</div>
+
+<style>
+  .barre-lecture {
+    position: fixed;
+    top: calc(var(--topbar-h) + var(--safe-top));
+    right: 0;
+    left: 0;
+    z-index: 26;
+    height: 2px;
+    background: color-mix(in srgb, var(--c-ink) 7%, transparent);
+    pointer-events: none;
+  }
+
+  .barre-lecture__remplissage {
+    display: block;
+    height: 100%;
+    background: var(--c-accent);
+    transform: scaleX(var(--progression, 0));
+    transform-origin: 0 50%;
+  }
+
+  @media (min-width: 1024px) {
+    .barre-lecture {
+      top: 0;
+      left: var(--sidebar-w);
+      height: 3px;
+    }
+  }
+
+  @media print {
+    .barre-lecture { display: none; }
+  }
+</style>

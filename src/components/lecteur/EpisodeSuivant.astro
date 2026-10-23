@@ -1,0 +1,128 @@
+---
+/**
+ * Carte « Épisode suivant », mise en avant à la fin du cours.
+ * Visible seulement quand le cours est tamponné : un parent [data-statut-cours] reçoit
+ * data-statut="termine" (src/scripts/progression.ts). Sans JavaScript, la navigation
+ * « Épisodes du tome » en bas de page suffit.
+ * `continuer` : depuis le Mode Focus, le prochain cours s'ouvre aussi en Focus.
+ */
+import Icone from '../Icone.astro';
+import Kanji from '../Kanji.astro';
+import type { CoursVue } from '../../lib/cours.ts';
+import { KANJI_NAVIGATION } from '../../lib/kanji.ts';
+import type { MatiereVue } from '../../lib/matieres.ts';
+import { urlTome } from '../../lib/url.ts';
+
+interface Props {
+  suivant: CoursVue | null;
+  matiere: MatiereVue;
+  continuer?: boolean;
+}
+
+const { suivant, matiere, continuer = false } = Astro.props;
+---
+
+<div class="suite">
+  {
+    suivant ? (
+      <a
+        class="suite__carte"
+        href={suivant.url}
+        rel="next"
+        data-couleur={suivant.matiere.couleur}
+        data-focus-continuer={continuer ? '' : undefined}
+        data-cours-suivant={continuer ? suivant.id : undefined}
+      >
+        <Kanji kanji={suivant.matiere.kanji} lecture={suivant.matiere.lecture} taille="lg" variante="plein" couleur={suivant.matiere.couleur} />
+        <span class="suite__texte">
+          <span class="suite__sur-titre">Épisode suivant</span>
+          <span class="suite__titre">{suivant.data.titre}</span>
+          <span class="suite__meta">
+            <span aria-hidden="true"><span lang="ja">第{suivant.chapitre}話</span> · {suivant.duree} min</span>
+            <span class="sr-only">Chapitre {suivant.chapitre}, {suivant.duree} minutes</span>
+          </span>
+        </span>
+        <span class="suite__fleche" aria-hidden="true"><Icone nom="fleche-droite" taille={20} /></span>
+      </a>
+    ) : (
+      <a class="suite__carte" href={urlTome(matiere.slug)} data-couleur={matiere.couleur}>
+        <Kanji kanji={KANJI_NAVIGATION.tomes.kanji} lecture={KANJI_NAVIGATION.tomes.lecture} taille="lg" variante="plein" couleur={matiere.couleur} />
+        <span class="suite__texte">
+          <span class="suite__sur-titre">Fin du tome</span>
+          <span class="suite__titre">Retour au tome {matiere.nom}</span>
+          <span class="suite__meta">Tu as lu le dernier épisode.</span>
+        </span>
+        <span class="suite__fleche" aria-hidden="true"><Icone nom="fleche-droite" taille={20} /></span>
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .suite {
+    display: none;
+    width: 100%;
+    max-width: 30rem;
+  }
+
+  :global([data-statut="termine"]) .suite {
+    display: block;
+    animation: suite-apparaitre var(--d-4) var(--ease-out) both 240ms;
+  }
+
+  @keyframes suite-apparaitre {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .suite__carte {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    min-height: 88px;
+    padding: var(--s-4) var(--s-4) var(--s-4) var(--s-4);
+    border-radius: var(--r-lg);
+    background: var(--couleur-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--couleur) 22%, transparent);
+    color: var(--c-ink);
+    text-align: left;
+    text-decoration: none;
+    transition: transform var(--d-3) var(--ease-out), box-shadow var(--d-3) var(--ease-out);
+  }
+
+  .suite__carte:hover {
+    color: var(--c-ink);
+    transform: translateY(-2px);
+    box-shadow: var(--sh-2), inset 0 0 0 1px color-mix(in srgb, var(--couleur) 32%, transparent);
+  }
+
+  .suite__carte:active { transform: scale(0.99); }
+  .suite__carte:focus-visible { border-radius: var(--r-lg); }
+
+  .suite__texte { display: grid; gap: 2px; flex: 1; min-width: 0; }
+
+  .suite__sur-titre {
+    color: var(--couleur-ink);
+    font: 600 0.75rem/1.3 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .suite__titre { font: var(--t-headline); letter-spacing: var(--t-headline-track); }
+  .suite__meta { color: var(--c-ink-2); font: var(--t-footnote); }
+  .suite__meta [lang="ja"] { font-weight: 700; }
+
+  .suite__fleche {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--cible);
+    height: var(--cible);
+    border-radius: var(--r-full);
+    background: var(--couleur);
+    color: var(--c-surface);
+    transition: transform var(--d-2) var(--ease-spring);
+  }
+
+  .suite__carte:hover .suite__fleche { transform: translateX(2px); }
+</style>

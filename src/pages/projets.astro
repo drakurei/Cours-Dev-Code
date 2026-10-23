@@ -1,0 +1,128 @@
+---
+/**
+ * /projets/ — les cours de type « projet », toutes matières : stack, statut, rôle, liens.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EnTeteSection from '../components/EnTeteSection.astro';
+import EtatVide from '../components/EtatVide.astro';
+import Icone from '../components/Icone.astro';
+import Kanji from '../components/Kanji.astro';
+import Puce from '../components/Puce.astro';
+import { coursPublies } from '../lib/cours.ts';
+import { KANJI_NAVIGATION } from '../lib/kanji.ts';
+import { formaterDate, STATUTS_PROJET_LIBELLES } from '../lib/libelles.ts';
+import { pluriel } from '../lib/texte.ts';
+import { url } from '../lib/url.ts';
+
+const projets = (await coursPublies())
+  .filter((c) => c.estProjet)
+  .sort((a, b) => (b.data.date ?? '').localeCompare(a.data.date ?? '') || a.data.titre.localeCompare(b.data.titre, 'fr'));
+const nav = KANJI_NAVIGATION.projets;
+---
+
+<BaseLayout titre="Projets" description="Tous mes projets : ce que j’ai construit, avec quoi, et ce que j’en ai retenu." pageActive="projets">
+  <EnTeteSection
+    niveau={1}
+    kanji={nav.kanji}
+    lecture={nav.lecture}
+    titre="Projets"
+    sousTitre={projets.length ? `${pluriel(projets.length, 'projet')}. Chaque fiche rappelle ce que tu as construit et comment.` : undefined}
+  />
+
+  {
+    projets.length ? (
+      <ul class="projets" role="list">
+        {projets.map((p) => {
+          const info = p.data.projet;
+          return (
+            <li>
+              <article class="carte carte--interactive projet" data-couleur={p.matiere.couleur} data-statut-cours={p.id} data-statut="a-lire">
+                <div class="projet__tete">
+                  <Kanji kanji={p.matiere.kanji} lecture={p.matiere.lecture} taille="sm" couleur={p.matiere.couleur} />
+                  <span class="projet__matiere">{p.matiere.nom}</span>
+                  {info?.statut && (
+                    <Puce variante={info.statut === 'termine' ? 'accent' : 'neutre'} class="projet__statut">
+                      {STATUTS_PROJET_LIBELLES[info.statut]}
+                    </Puce>
+                  )}
+                </div>
+                <h2 class="projet__titre">
+                  <a class="carte__lien" href={p.url}>{p.data.titre}</a>
+                </h2>
+                <p class="projet__essentiel">{p.data.essentiel}</p>
+                {info?.stack.length ? (
+                  <ul class="rangee projet__stack" role="list" aria-label="Stack">
+                    {info.stack.map((s) => <li><Puce variante="couleur" couleur={p.matiere.couleur}>{s}</Puce></li>)}
+                  </ul>
+                ) : null}
+                <div class="projet__pied">
+                  <p class="projet__meta">
+                    {info?.role ?? 'Fiche projet'}
+                    {p.data.date && <> · <time datetime={p.data.date}>{formaterDate(p.data.date)}</time></>}
+                  </p>
+                  {(info?.repo || info?.demo) && (
+                    <div class="projet__liens">
+                      {info.repo && (
+                        <a class="btn btn--discret projet__lien" href={info.repo} target="_blank" rel="noopener">
+                          <Icone nom="code" taille={17} />Code<span class="sr-only"> de {p.data.titre} (nouvel onglet)</span>
+                        </a>
+                      )}
+                      {info.demo && (
+                        <a class="btn btn--discret projet__lien" href={info.demo} target="_blank" rel="noopener">
+                          <Icone nom="ecran" taille={17} />Démo<span class="sr-only"> de {p.data.titre} (nouvel onglet)</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </article>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <EtatVide kanji={nav.kanji} titre="Aucun projet pour l’instant" texte="Transforme un projet en cours (type: projet) : il apparaîtra ici avec sa stack et ses liens.">
+        <a class="btn btn--primaire" href={url('/atelier/')}>Ouvrir l’Atelier</a>
+      </EtatVide>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .projets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: var(--s-4);
+    margin: 0;
+    padding: 0;
+  }
+
+  .projets > li { display: grid; }
+
+  .projet { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); }
+
+  .projet__tete { display: flex; align-items: center; gap: var(--s-2); }
+  .projet__matiere { color: var(--couleur-ink); font: 600 0.875rem/1.2 var(--font-ui); }
+  :global(.projet__statut) { margin-left: auto; }
+
+  .projet__titre { font: var(--t-title3); letter-spacing: var(--t-title3-track); }
+  .projet__essentiel { color: var(--c-ink-2); font: var(--t-subhead); }
+  .projet__stack { margin: 0; padding: 0; }
+
+  .projet__pied {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    margin-top: var(--s-2);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--c-line);
+  }
+
+  .projet__meta { color: var(--c-ink-3); font: var(--t-footnote); }
+  .projet__liens { display: flex; gap: var(--s-1); margin-right: calc(-1 * var(--s-2)); }
+
+  /* Les liens restent cliquables au-dessus du lien qui couvre la carte. */
+  :global(.projet__lien) { position: relative; z-index: 1; }
+</style>
